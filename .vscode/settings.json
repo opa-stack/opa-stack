@@ -1,0 +1,8 @@
+{
+    "files.eol": "\n",
+    "terminal.integrated.shell.linux": "/bin/bash",
+    "python.formatting.provider": "black",
+    "python.linting.pylintEnabled": false,
+    "editor.formatOnSave": true,
+    "python.pythonPath": "venv/bin/python3"
+}

@@ -1,0 +1,35 @@
+version: "3"
+
+services:
+  api:
+    build: "api"
+    volumes:
+      - "./api/data:/data"
+      - ".:/opa-stack"
+    ports:
+      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:5678:5678" # Only needed for debugging
+    env_file:
+      - .env
+
+  mongo:
+    image: "mongo:3.6.16"
+    environment:
+      MONGO_INITDB_DATABASE: "api"
+    volumes:
+      - "./mongo/entrypoint:/docker-entrypoint-initdb.d"
+
+  mongo-dashboard:
+    image: mongo-express
+    ports:
+      - "127.0.0.1:8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_AUTH_DATABASE: api
+      ME_CONFIG_MONGODB_AUTH_USERNAME: mongo
+      ME_CONFIG_MONGODB_AUTH_PASSWORD: mongo
+
+  rabbitmq:
+    image: "rabbitmq:3.8.2-management"
+
+  redis:
+    image: "redis:5.0.7"

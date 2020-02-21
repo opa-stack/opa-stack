@@ -1,0 +1,8 @@
+*.pyc
+temp/
+.mypy_cache
+__pycache__
+venv
+
+# Personal .env files should be ignored.. Copy in from .env-example if needed
+.env
