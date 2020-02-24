@@ -1,7 +1,3 @@
-"""
-There are other plugin managers out there, but we needed something simple
-"""
-
 import os
 import sys
 import logging

@@ -1,8 +1,10 @@
-version: "3"
+version: "3.7"
 
 services:
   api:
-    build: "api"
+    build:
+      context: "api"
+      dockerfile: Dockerfile-dev
     volumes:
       - "./api/data:/data"
       - ".:/opa-stack"
