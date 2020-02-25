@@ -6,7 +6,12 @@ from importlib import import_module
 
 from fastapi import FastAPI
 
-from ..core.config import PLUGIN_PATHS, PLUGIN_ALLOWED
+from ..core.config import (
+    PLUGIN_PATHS,
+    PLUGIN_WHITELIST_RE,
+    PLUGIN_WHITELIST_LIST,
+    PLUGIN_BLACKLIST_LIST,
+)
 
 
 class PluginManager:
@@ -19,7 +24,7 @@ class PluginManager:
           * mode: one of
             * IMMUTABLE: Hook can only be set once, it can not be overwritten.
         """
-        self.hooks = {'version': {'required': True, 'mode': 'IMMUTABLE'}}
+        self.hooks = {'version': {'mode': 'IMMUTABLE'}}
 
     def check_required(self):
         missing = []
@@ -58,22 +63,37 @@ def initialize(app):
     """
     Plugins are imported from multiple paths with these rules:
       * First with a unique name wins
-      * Plugin must also be in PLUGIN_ALLOWED (regex)
+      * Plugin must also be in PLUGIN_WHITELIST_RE (regex)
+      * And in PLUGIN_WHITELIST_LIST (csv) if set
+      * And must not be in PLUGIN_BLACKLIST_LIST (csv) if set
     """
 
-    logging.info(f'plugin-paths: {PLUGIN_PATHS}, regex-check: {PLUGIN_ALLOWED}')
+    logging.info(
+        f'plugin-paths: {PLUGIN_PATHS}, whitelist-regex: {PLUGIN_WHITELIST_RE}, whitelist-list: {PLUGIN_WHITELIST_LIST}, blacklist-list: {PLUGIN_BLACKLIST_LIST}'
+    )
 
     sys.path += PLUGIN_PATHS
 
     for plugin in pkgutil.iter_modules(PLUGIN_PATHS):
         allow_match = os.path.join(plugin.module_finder.path, plugin.name)
         logging.debug(f'Checking if "{allow_match}" is a match')
-        load = True if PLUGIN_ALLOWED.match(allow_match) else False
+        load_re = True if PLUGIN_WHITELIST_RE.match(allow_match) else False
+
+        if PLUGIN_WHITELIST_LIST:
+            load_list = allow_match in PLUGIN_WHITELIST_LIST
+        else:
+            load_list = True
+
+        if PLUGIN_BLACKLIST_LIST:
+            load_blacklist = allow_match not in PLUGIN_BLACKLIST_LIST
+        else:
+            load_blacklist = True
+
         logging.info(
-            f'Plugin: {plugin.name} (match_check: {allow_match}) (loading: {load})'
+            f'Plugin: {plugin.name} (match_check: {allow_match}) (loading_re: {load_re}) (loading_list({load_list}) (loading_blacklist_list({load_blacklist}))'
         )
 
-        if not load:
+        if all([load_re, load_list, load_blacklist]):
             continue
 
         mod = import_module(plugin.name)

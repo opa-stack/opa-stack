@@ -23,7 +23,9 @@ PROJECT_DESCRIPTION = os.getenv("PROJECT_DESCRIPTION", "")
 PLUGIN_PATHS = list(CommaSeparatedStrings(os.getenv("PLUGIN_PATHS", ""))) + [
     "/data/opa/plugins",
 ]
-PLUGIN_ALLOWED = re.compile(os.getenv("PLUGIN_ALLOWED", ""))
+PLUGIN_WHITELIST_RE = re.compile(os.getenv("PLUGIN_WHITELIST_RE", ""))
+PLUGIN_WHITELIST_LIST = CommaSeparatedStrings(os.getenv("PLUGIN_WHITELIST_LIST", ""))
+PLUGIN_BLACKLIST_LIST = CommaSeparatedStrings(os.getenv("PLUGIN_BLACKLIST_LIST", ""))
 
 ALLOWED_HOSTS = CommaSeparatedStrings(os.getenv("ALLOWED_HOSTS", "*"))
 SECRET_KEY = Secret(os.getenv("SECRET_KEY", "secret-key"))
