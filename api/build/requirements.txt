@@ -8,7 +8,7 @@ ipython
 # Core
 fastapi
 uvicorn
-python-dotenv
+dynaconf[all]
 aiofiles        # To serve static files
 
 # Libs
