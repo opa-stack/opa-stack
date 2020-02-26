@@ -26,6 +26,8 @@ PLUGIN_PATHS = list(CommaSeparatedStrings(os.getenv("PLUGIN_PATHS", ""))) + [
 PLUGIN_WHITELIST_RE = re.compile(os.getenv("PLUGIN_WHITELIST_RE", ""))
 PLUGIN_WHITELIST_LIST = CommaSeparatedStrings(os.getenv("PLUGIN_WHITELIST_LIST", ""))
 PLUGIN_BLACKLIST_LIST = CommaSeparatedStrings(os.getenv("PLUGIN_BLACKLIST_LIST", ""))
+PLUGIN_BLACKLIST_RE = re.compile(os.getenv("PLUGIN_BLACKLIST_RE", ""))
+
 
 ALLOWED_HOSTS = CommaSeparatedStrings(os.getenv("ALLOWED_HOSTS", "*"))
 SECRET_KEY = Secret(os.getenv("SECRET_KEY", "secret-key"))

@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from ..core.config import (
     PLUGIN_PATHS,
     PLUGIN_WHITELIST_RE,
+    PLUGIN_BLACKLIST_RE,
     PLUGIN_WHITELIST_LIST,
     PLUGIN_BLACKLIST_LIST,
 )
@@ -63,37 +64,53 @@ def initialize(app):
     """
     Plugins are imported from multiple paths with these rules:
       * First with a unique name wins
-      * Plugin must also be in PLUGIN_WHITELIST_RE (regex)
-      * And in PLUGIN_WHITELIST_LIST (csv) if set
-      * And must not be in PLUGIN_BLACKLIST_LIST (csv) if set
+      * There are multiple matchers, that ALL must return true. They return true if they are NOT set, or if they match "$plugin_path / $plugin_name"
+        * PLUGIN_WHITELIST_RE (regex)
+        * PLUGIN_WHITELIST_LIST
+        * not in PLUGIN_BLACKLIST_LIST
+        * not in PLUGIN_BLACKLIST_RE
+
+      FIXME:
+        * Add metadata option in plugins (tags)
+        * Use config using json/yaml for tags..
     """
 
     logging.info(
-        f'plugin-paths: {PLUGIN_PATHS}, whitelist-regex: {PLUGIN_WHITELIST_RE}, whitelist-list: {PLUGIN_WHITELIST_LIST}, blacklist-list: {PLUGIN_BLACKLIST_LIST}'
+        f'plugin-paths: {PLUGIN_PATHS}, whitelist-regex: {PLUGIN_WHITELIST_RE}, whitelist-list: {PLUGIN_WHITELIST_LIST}, blacklist-list: {PLUGIN_BLACKLIST_LIST}, blacklist-regex: {PLUGIN_BLACKLIST_RE}'
     )
 
     sys.path += PLUGIN_PATHS
 
     for plugin in pkgutil.iter_modules(PLUGIN_PATHS):
         allow_match = os.path.join(plugin.module_finder.path, plugin.name)
+        logging.debug('')
         logging.debug(f'Checking if "{allow_match}" is a match')
-        load_re = True if PLUGIN_WHITELIST_RE.match(allow_match) else False
+        load_checks = {}
 
         if PLUGIN_WHITELIST_LIST:
-            load_list = allow_match in PLUGIN_WHITELIST_LIST
-        else:
-            load_list = True
+            load_checks['PLUGIN_WHITELIST_LIST'] = allow_match in PLUGIN_WHITELIST_LIST
+
+        if PLUGIN_WHITELIST_RE.pattern:
+            load_checks['PLUGIN_WHITELIST_RE'] = bool(
+                PLUGIN_WHITELIST_RE.match(allow_match)
+            )
 
         if PLUGIN_BLACKLIST_LIST:
-            load_blacklist = allow_match not in PLUGIN_BLACKLIST_LIST
-        else:
-            load_blacklist = True
+            load_checks['PLUGIN_BLACKLIST_LIST'] = (
+                allow_match not in PLUGIN_BLACKLIST_LIST
+            )
 
-        logging.info(
-            f'Plugin: {plugin.name} (match_check: {allow_match}) (loading_re: {load_re}) (loading_list({load_list}) (loading_blacklist_list({load_blacklist}))'
-        )
+        if PLUGIN_BLACKLIST_RE.pattern:
+            load_checks['PLUGIN_BLACKLIST_RE'] = not bool(
+                PLUGIN_BLACKLIST_RE.match(allow_match)
+            )
 
-        if all([load_re, load_list, load_blacklist]):
+        load = all(load_checks.values())
+
+        logging.info(f'Plugin ({plugin.name}), loading({load})')
+        logging.debug(f'Load-checks: {load_checks}')
+
+        if not load:
             continue
 
         mod = import_module(plugin.name)
