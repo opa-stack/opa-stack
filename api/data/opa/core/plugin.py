@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import logging
 import pkgutil
@@ -6,13 +7,7 @@ from importlib import import_module
 
 from fastapi import FastAPI
 
-from ..core.config import (
-    PLUGIN_PATHS,
-    PLUGIN_WHITELIST_RE,
-    PLUGIN_BLACKLIST_RE,
-    PLUGIN_WHITELIST_LIST,
-    PLUGIN_BLACKLIST_LIST,
-)
+from ..core import config
 
 
 class PluginManager:
@@ -75,29 +70,34 @@ def initialize(app):
         * Use config using json/yaml for tags..
     """
 
+    PLUGIN_WHITELIST_RE = re.compile(config.PLUGIN_WHITELIST_RE)
+    PLUGIN_BLACKLIST_RE = re.compile(config.PLUGIN_BLACKLIST_RE)
+
     logging.info(
-        f'plugin-paths: {PLUGIN_PATHS}, whitelist-regex: {PLUGIN_WHITELIST_RE}, whitelist-list: {PLUGIN_WHITELIST_LIST}, blacklist-list: {PLUGIN_BLACKLIST_LIST}, blacklist-regex: {PLUGIN_BLACKLIST_RE}'
+        f'plugin-paths: {config.PLUGIN_PATHS}, whitelist-regex: {PLUGIN_WHITELIST_RE}, whitelist-list: {config.PLUGIN_WHITELIST_LIST}, blacklist-list: {config.PLUGIN_BLACKLIST_LIST}, blacklist-regex: {PLUGIN_BLACKLIST_RE}'
     )
 
-    sys.path += PLUGIN_PATHS
+    sys.path += config.PLUGIN_PATHS
 
-    for plugin in pkgutil.iter_modules(PLUGIN_PATHS):
+    for plugin in pkgutil.iter_modules(config.PLUGIN_PATHS):
         allow_match = os.path.join(plugin.module_finder.path, plugin.name)
         logging.debug('')
         logging.debug(f'Checking if "{allow_match}" is a match')
         load_checks = {}
 
-        if PLUGIN_WHITELIST_LIST:
-            load_checks['PLUGIN_WHITELIST_LIST'] = allow_match in PLUGIN_WHITELIST_LIST
+        if config.PLUGIN_WHITELIST_LIST:
+            load_checks['PLUGIN_WHITELIST_LIST'] = (
+                allow_match in config.PLUGIN_WHITELIST_LIST
+            )
 
         if PLUGIN_WHITELIST_RE.pattern:
             load_checks['PLUGIN_WHITELIST_RE'] = bool(
                 PLUGIN_WHITELIST_RE.match(allow_match)
             )
 
-        if PLUGIN_BLACKLIST_LIST:
+        if config.PLUGIN_BLACKLIST_LIST:
             load_checks['PLUGIN_BLACKLIST_LIST'] = (
-                allow_match not in PLUGIN_BLACKLIST_LIST
+                allow_match not in config.PLUGIN_BLACKLIST_LIST
             )
 
         if PLUGIN_BLACKLIST_RE.pattern:
@@ -124,5 +124,4 @@ def initialize(app):
 
 
 def get_plugin_manager() -> PluginManager:
-    logging.info('get_plugin_manager')
     return plugin_manager

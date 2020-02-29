@@ -1,0 +1,28 @@
+default:
+  MODE: "dev"
+  PROJECT_NAME: "opa-stack"
+  PROJECT_DESCRIPTION: ""
+  PLUGIN_PATHS:
+    - "/data/opa/plugins"
+
+  PLUGIN_WHITELIST_LIST: []
+  PLUGIN_WHITELIST_RE: ""
+  PLUGIN_BLACKLIST_LIST: []
+  PLUGIN_BLACKLIST_RE: ""
+
+  ALLOWED_HOSTS: ["*"]
+  SECRET_KEY: ""
+
+  MONGODB_URL: "mongodb://mongo:mongo@mongo:27017/opa"
+  BETTER_EXCEPTIONS: false
+
+  # Python Tools for Visual Studio debug server, running on port 5678
+  PTVSD: false
+
+dev:
+  PTVSD: true
+  BETTER_EXCEPTIONS: true
+  BETTER_EXCEPTIONS_MAX_LENGTH: 1000
+  PLUGIN_PATHS:
+    - "/data/opa/demo-plugins"
+    - dynaconf_merge

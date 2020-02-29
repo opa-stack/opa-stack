@@ -11,13 +11,13 @@ services:
     ports:
       - "127.0.0.1:8000:8000"
       - "127.0.0.1:5678:5678" # Only needed for debugging
-    env_file:
-      - .env
+    environment:
+      ENV: dev
 
   mongo:
     image: "mongo:3.6.16"
     environment:
-      MONGO_INITDB_DATABASE: "api"
+      MONGO_INITDB_DATABASE: "opa"
     volumes:
       - "./mongo/entrypoint:/docker-entrypoint-initdb.d"
 
@@ -26,7 +26,7 @@ services:
     ports:
       - "127.0.0.1:8081:8081"
     environment:
-      ME_CONFIG_MONGODB_AUTH_DATABASE: api
+      ME_CONFIG_MONGODB_AUTH_DATABASE: opa
       ME_CONFIG_MONGODB_AUTH_USERNAME: mongo
       ME_CONFIG_MONGODB_AUTH_PASSWORD: mongo
 
