@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+import json
 import logging
 import pkgutil
 from importlib import import_module
@@ -62,27 +63,50 @@ def initialize(app):
       * There are multiple matchers, that ALL must return true. They return true if they are NOT set, or if they match "$plugin_path / $plugin_name"
         * PLUGIN_WHITELIST_RE (regex)
         * PLUGIN_WHITELIST_LIST
+        * PLUGIN_WHITELIST_TAGS
         * not in PLUGIN_BLACKLIST_LIST
         * not in PLUGIN_BLACKLIST_RE
-
-      FIXME:
-        * Add metadata option in plugins (tags)
-        * Use config using json/yaml for tags..
+        * not in PLUGIN_BLACKLIST_TAGS
     """
 
     PLUGIN_WHITELIST_RE = re.compile(config.PLUGIN_WHITELIST_RE)
     PLUGIN_BLACKLIST_RE = re.compile(config.PLUGIN_BLACKLIST_RE)
 
+    PLUGIN_WHITELIST_TAGS = set(config.PLUGIN_WHITELIST_TAGS)
+    PLUGIN_BLACKLIST_TAGS = set(config.PLUGIN_BLACKLIST_TAGS)
+
     logging.info(
-        f'plugin-paths: {config.PLUGIN_PATHS}, whitelist-regex: {PLUGIN_WHITELIST_RE}, whitelist-list: {config.PLUGIN_WHITELIST_LIST}, blacklist-list: {config.PLUGIN_BLACKLIST_LIST}, blacklist-regex: {PLUGIN_BLACKLIST_RE}'
+        'Plugin loading settings:'
+        f'  plugin-paths: {config.PLUGIN_PATHS}\n'
+        f'  whitelist-regex: {PLUGIN_WHITELIST_RE}\n'
+        f'  whitelist-list: {config.PLUGIN_WHITELIST_LIST}\n'
+        f'  whitelist-tags: {config.PLUGIN_WHITELIST_TAGS}\n'
+        f'  blacklist-list: {config.PLUGIN_BLACKLIST_LIST}\n'
+        f'  blacklist-regex: {PLUGIN_BLACKLIST_RE}\n'
+        f'  blacklist-tags: {PLUGIN_BLACKLIST_TAGS}\n'
     )
 
     sys.path += config.PLUGIN_PATHS
 
     for plugin in pkgutil.iter_modules(config.PLUGIN_PATHS):
         allow_match = os.path.join(plugin.module_finder.path, plugin.name)
+
+        if plugin.ispkg:
+            metafile = os.path.join(allow_match, 'meta.json')
+        else:
+            metafile = f'{allow_match}-meta.json'
+
         logging.debug('')
-        logging.debug(f'Checking if "{allow_match}" is a match')
+        logging.debug(f'Checking if we should load "{allow_match}"')
+
+        if os.path.exists(metafile):
+            logging.debug(f'Found metafile @ {metafile}')
+            metadata = json.load(open(metafile, 'r'))
+        else:
+            logging.debug(f'Metafile @ {metafile} does not exist, using empty metadata')
+            metadata = {}
+        logging.debug(f'Metadata: {metadata}')
+
         load_checks = {}
 
         if config.PLUGIN_WHITELIST_LIST:
@@ -95,6 +119,11 @@ def initialize(app):
                 PLUGIN_WHITELIST_RE.match(allow_match)
             )
 
+        if PLUGIN_WHITELIST_TAGS:
+            load_checks['PLUGIN_WHITELIST_TAGS'] = bool(
+                PLUGIN_WHITELIST_TAGS & set(metadata.get('tags', []))
+            )
+
         if config.PLUGIN_BLACKLIST_LIST:
             load_checks['PLUGIN_BLACKLIST_LIST'] = (
                 allow_match not in config.PLUGIN_BLACKLIST_LIST
@@ -105,14 +134,18 @@ def initialize(app):
                 PLUGIN_BLACKLIST_RE.match(allow_match)
             )
 
-        load = all(load_checks.values())
+        if PLUGIN_BLACKLIST_TAGS:
+            load_checks['PLUGIN_BLACKLIST_TAGS'] = not bool(
+                PLUGIN_BLACKLIST_TAGS & set(metadata.get('tags', []))
+            )
 
-        logging.info(f'Plugin ({plugin.name}), loading({load})')
-        logging.debug(f'Load-checks: {load_checks}')
+        load = all(load_checks.values())
+        logging.debug(f'Load-checks: {load_checks}, overall({load})')
 
         if not load:
             continue
 
+        logging.info(f'Loading plugin: {plugin.name}')
         mod = import_module(plugin.name)
 
         if hasattr(mod, 'setup'):
