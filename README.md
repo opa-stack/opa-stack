@@ -1,18 +1,20 @@
-# opa-stack
+<p align="center">
+    <em>Ops (API|Automation) stack</em>
+</p>
+<p align="center">
+<a href="https://travis-ci.org/opa-stack/opa-stack" target="_blank">
+    <img src="https://travis-ci.org/opa-stack/opa-stack.svg?branch=master" alt="Build Status">
+</a>
+<a href="https://travis-ci.org/opa-stack/opa-stack.github.io" target="_blank">
+    <img src="https://travis-ci.org/opa-stack/opa-stack.github.io.svg?branch=master" alt="Documentation build status">
+</a>
 
-## Dev hints
+</p>
 
-* Getting a mongo-shell
-  * docker-compose exec mongo mongo mongodb://mongo:mongo@localhost:27017/api
+---
 
-* Stop api and run manually
-  * s6-svc -h /var/run/s6/services/api/
-  * cd /data/ && /usr/bin/python3.6 /usr/local/bin/uvicorn opa.main:app --host 0.0.0.0
-    * Use `--log-level debug` if you want debug-logging
+**Documentation**: <a href="https://opa-stack.github.io" target="_blank">https://opa-stack.github.io</a>
 
-## Resources
+**Source Code**: <a href="https://github.com/opa-stack/opa-stack" target="_blank">https://github.com/opa-stack/opa-stack</a>
 
-* Example projects using fastapi
-  * https://fastapi.tiangolo.com/project-generation/
-  * https://github.com/markqiu/fastapi-mongodb-realworld-example-app
-* Cheatsheet - https://gitlab.com/euri10/fastapi_cheatsheet
+---
