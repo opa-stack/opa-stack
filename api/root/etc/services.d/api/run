@@ -1,4 +1,4 @@
 #!/usr/bin/with-contenv sh
 
 cd /data
-exec uvicorn opa.main:app --host 0.0.0.0
+exec uvicorn opa.main:app --host 0.0.0.0 --log-level ${OPA_LOGLEVEL:-info}
