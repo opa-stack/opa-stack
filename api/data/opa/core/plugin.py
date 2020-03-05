@@ -76,7 +76,7 @@ def initialize(app):
     PLUGIN_BLACKLIST_TAGS = set(config.PLUGIN_BLACKLIST_TAGS)
 
     PLUGIN_PATHS = (
-        list(config.PLUGIN_PATHS)
+        list([config.PLUGIN_PATHS])
         if isinstance(config.PLUGIN_PATHS, str)
         else config.PLUGIN_PATHS
     )
