@@ -75,9 +75,15 @@ def initialize(app):
     PLUGIN_WHITELIST_TAGS = set(config.PLUGIN_WHITELIST_TAGS)
     PLUGIN_BLACKLIST_TAGS = set(config.PLUGIN_BLACKLIST_TAGS)
 
+    PLUGIN_PATHS = (
+        list(config.PLUGIN_PATHS)
+        if isinstance(config.PLUGIN_PATHS, str)
+        else config.PLUGIN_PATHS
+    )
+
     logging.info(
         'Plugin loading settings:'
-        f'  plugin-paths: {config.PLUGIN_PATHS}\n'
+        f'  plugin-paths: {PLUGIN_PATHS}\n'
         f'  whitelist-regex: {PLUGIN_WHITELIST_RE}\n'
         f'  whitelist-list: {config.PLUGIN_WHITELIST_LIST}\n'
         f'  whitelist-tags: {config.PLUGIN_WHITELIST_TAGS}\n'
@@ -86,9 +92,9 @@ def initialize(app):
         f'  blacklist-tags: {PLUGIN_BLACKLIST_TAGS}\n'
     )
 
-    sys.path += config.PLUGIN_PATHS
+    sys.path += PLUGIN_PATHS
 
-    for plugin in pkgutil.iter_modules(config.PLUGIN_PATHS):
+    for plugin in pkgutil.iter_modules(PLUGIN_PATHS):
         allow_match = os.path.join(plugin.module_finder.path, plugin.name)
 
         if plugin.ispkg:
