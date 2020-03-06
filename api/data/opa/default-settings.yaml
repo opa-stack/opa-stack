@@ -1,5 +1,5 @@
 default:
-  MODE: "dev"
+  MODE: "prod"
   PROJECT_NAME: "opa-stack"
   PROJECT_DESCRIPTION: ""
   PLUGIN_PATHS:
@@ -22,6 +22,7 @@ default:
   PTVSD: false
 
 dev:
+  MODE: "dev"
   PTVSD: true
   BETTER_EXCEPTIONS: true
   BETTER_EXCEPTIONS_MAX_LENGTH: 1000
