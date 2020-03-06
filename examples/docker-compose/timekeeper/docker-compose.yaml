@@ -1,0 +1,15 @@
+version: "3.7"
+
+services:
+  api:
+    image: opastack/api:latest
+    ports:
+      - "127.0.0.1:8001:8000"
+      - "127.0.0.1:5678:5678"
+    environment:
+      OPA_PLUGIN_PATHS: "@merge /plugins"
+      OPA_PLUGIN_BLACKLIST_LIST: '["/data/opa/plugins/core-selfhosted"]'
+      ENV: "dev"
+      OPA_LOGLEVEL: "debug"
+    volumes:
+      - ./plugins:/plugins
