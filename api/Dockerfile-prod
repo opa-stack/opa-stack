@@ -2,3 +2,5 @@ FROM opastack/base-centos:8-opa.1
 
 COPY root /
 COPY data /data
+
+RUN ["/usr/local/bin/save-env.py", "SOURCE_BRANCH", "SOURCE_COMMIT", "DOCKER_TAG"]

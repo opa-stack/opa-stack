@@ -7,6 +7,7 @@ config = LazySettings(
     ENVVAR_PREFIX_FOR_DYNACONF='OPA',
     ROOT_PATH_FOR_DYNACONF='/data/settings',
     INCLUDES_FOR_DYNACONF=[
+        '/data/build-info-container.json',
         '/data/opa/default-settings.yaml',
         '*.yaml',
         '*.json',
