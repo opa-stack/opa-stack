@@ -8,6 +8,7 @@ from importlib import import_module
 
 from fastapi import FastAPI
 
+from ..utils import unique
 from ..core import config
 
 
@@ -75,7 +76,7 @@ def initialize(app):
     PLUGIN_WHITELIST_TAGS = set(config.PLUGIN_WHITELIST_TAGS)
     PLUGIN_BLACKLIST_TAGS = set(config.PLUGIN_BLACKLIST_TAGS)
 
-    PLUGIN_PATHS = (
+    PLUGIN_PATHS = unique(
         list([config.PLUGIN_PATHS])
         if isinstance(config.PLUGIN_PATHS, str)
         else config.PLUGIN_PATHS
