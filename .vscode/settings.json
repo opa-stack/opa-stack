@@ -4,5 +4,5 @@
     "python.formatting.provider": "black",
     "python.linting.pylintEnabled": false,
     "editor.formatOnSave": true,
-    "python.pythonPath": "venv/bin/python3"
+    "python.pythonPath": "venv/bin/python"
 }
