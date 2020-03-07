@@ -7,7 +7,7 @@ from starlette.requests import Request
 from opa.models.test import Item, Items
 
 from opa.core.security import get_src_zone, Zone
-from opa.db.mongodb import AsyncIOMotorClient, AsyncIOMotorDatabase, get_database
+from opa.utils.mongodb import AsyncIOMotorClient, AsyncIOMotorDatabase, get_database
 
 
 async def create_test_item(db: AsyncIOMotorDatabase, item: Item) -> Item:

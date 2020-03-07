@@ -9,6 +9,8 @@ Note that the folder named 'core-js-static' must be populated before this plugin
 from fastapi import APIRouter
 from starlette.staticfiles import StaticFiles
 
+from opa.core import config
+
 
 def setup(app, **kwargs):
     if config.SELF_HOSTED:
