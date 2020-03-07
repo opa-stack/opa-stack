@@ -80,7 +80,7 @@ def initialize(app):
         list([config.PLUGIN_PATHS])
         if isinstance(config.PLUGIN_PATHS, str)
         else config.PLUGIN_PATHS
-    )
+    ) + ['/data/opa/plugins']
 
     logging.info(
         'Plugin loading settings:'
