@@ -30,6 +30,7 @@ default:
       URL: "mongodb://mongo:mongo@mongo:27017/opa"
     REDIS:
       LOAD: "auto"
+      URL: "redis://redis"
 
   BETTER_EXCEPTIONS: false
 
