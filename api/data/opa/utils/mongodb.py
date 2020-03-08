@@ -12,10 +12,6 @@ class DataBase:
 db = DataBase()
 
 
-async def get_database(name=None) -> AsyncIOMotorDatabase:
-    return db.client[name or 'opa']
-
-
 async def connect_to_mongo():
     logging.info("Connecting to mongodb database..")
     db.client = AsyncIOMotorClient(
@@ -26,9 +22,14 @@ async def connect_to_mongo():
     )
 
     # This throws an exception if not connected
-    logging.info(await db.client.server_info())
+    info = await db.client.server_info()
+    logging.debug(info)
 
 
 async def close_mongo_connection():
     logging.info("Closing mongodb connection")
     db.client.close()
+
+
+async def get_database(name=None) -> AsyncIOMotorDatabase:
+    return db.client[name or 'opa']
