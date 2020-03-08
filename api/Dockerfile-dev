@@ -1,3 +1,4 @@
 FROM opastack/base-centos:8-opa.1
 
 COPY root /
+COPY data /data
