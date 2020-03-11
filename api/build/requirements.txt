@@ -5,6 +5,9 @@ black
 mypy
 ipython
 pytest
+coverage
+codecov
+pytest-cov
 
 #
 # Core

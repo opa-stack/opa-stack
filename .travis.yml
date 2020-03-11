@@ -1,0 +1,19 @@
+language: python
+
+cache: pip
+
+python:
+  - "3.6"
+  - "3.7"
+  - "3.8"
+  - "nightly"
+
+matrix:
+  allow_failures:
+    - python: "nightly"
+
+script:
+  - bash scripts/test.sh
+
+after_success:
+  - codecov

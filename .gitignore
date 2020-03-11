@@ -8,3 +8,5 @@ api/data/opa/tests/*.log
 
 # Personal .env files should be ignored..
 .env
+
+.coverage
