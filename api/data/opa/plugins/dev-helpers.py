@@ -11,4 +11,4 @@ if config.BETTER_EXCEPTIONS:
 if config.PTVSD:
     import ptvsd
 
-    ptvsd.enable_attach(('0.0.0.0', 5678), redirect_output=True)
+    ptvsd.enable_attach(('0.0.0.0', 5678))
