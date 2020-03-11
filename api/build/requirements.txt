@@ -1,11 +1,10 @@
 #
-# Utils (can be moved out to requirements-dev.txt later)
+# Dev (can be moved out to requirements-dev.txt later)
 #
 black
-better_exceptions
-ptvsd           # Python Tools for Visual Studio debug server
 mypy
 ipython
+pytest
 
 #
 # Core
@@ -21,8 +20,12 @@ aiofiles        # To serve static files
 motor           # Async driver for mongodb
 databases       # Not for mongodb but other db's. However, it contains some nifty utils
 email-validator # Might be usefull, also to silence some naging on stdout from other libs
-
 aioredis        # Async redis
 walrus          # Featurerich redis-client (non-async)
-
 # ansible lib..?
+
+#
+# Helpers (not absolutly needed)
+#
+ptvsd           # Python Tools for Visual Studio debug server
+better_exceptions

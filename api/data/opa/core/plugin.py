@@ -8,12 +8,12 @@ from importlib import import_module
 
 from fastapi import FastAPI
 
-from ..utils import unique
-from ..core import config
+from opa.utils import unique
+from opa import config
 
 
 class PluginManager:
-    def __init__(self):
+    def setup(self):
         """
         Hook-definitions, ie, valid hooks and their config
 
@@ -57,7 +57,9 @@ class PluginManager:
 plugin_manager = PluginManager()  # Singleton used around the app
 
 
-def initialize(app):
+def init(app):
+    plugin_manager.setup()
+
     """
     Plugins are imported from multiple paths with these rules:
       * First with a unique name wins
@@ -69,7 +71,6 @@ def initialize(app):
         * not in PLUGIN_BLACKLIST_RE
         * not in PLUGIN_BLACKLIST_TAGS
     """
-
     PLUGIN_WHITELIST_RE = re.compile(config.PLUGIN_WHITELIST_RE)
     PLUGIN_BLACKLIST_RE = re.compile(config.PLUGIN_BLACKLIST_RE)
 
@@ -93,7 +94,8 @@ def initialize(app):
         f'  blacklist-tags: {PLUGIN_BLACKLIST_TAGS}\n'
     )
 
-    sys.path += PLUGIN_PATHS
+    sys_paths = sys.path + PLUGIN_PATHS
+    sys.path = unique(sys_paths)
 
     for plugin in pkgutil.iter_modules(PLUGIN_PATHS):
         allow_match = os.path.join(plugin.module_finder.path, plugin.name)

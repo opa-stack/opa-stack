@@ -1,7 +1,7 @@
 import socket
 import logging
 from databases import DatabaseURL
-from opa.core import config
+from opa import config
 
 from opa.utils.mongodb import connect_to_mongo, close_mongo_connection
 from opa.utils.redis import (

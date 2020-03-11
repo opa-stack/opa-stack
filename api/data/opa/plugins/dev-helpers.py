@@ -1,6 +1,6 @@
 import os
 
-from opa.core import config
+from opa import config
 
 if config.BETTER_EXCEPTIONS:
     import better_exceptions
