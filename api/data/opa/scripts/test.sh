@@ -2,4 +2,5 @@
 
 set -ex
 
-pytest --cov=. ${@}
+cd /data/opa/
+pytest --cov=. tests

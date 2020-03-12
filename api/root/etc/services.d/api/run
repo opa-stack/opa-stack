@@ -1,5 +1,7 @@
 #!/usr/bin/with-contenv sh
 
+[[ "${DONTSTART}" == "api" ]] && ( /usr/bin/s6-stopdisable api && exit 0 )
+
 cd /data
 
 if [[ ${ENV} == "dev" ]]; then

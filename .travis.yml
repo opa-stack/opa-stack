@@ -1,19 +1,15 @@
-language: python
+sudo: required
+services:
+  - docker
 
-cache: pip
+env:
+  COMPOSE_VERSION: 1.25.4
 
-python:
-  - "3.6"
-  - "3.7"
-  - "3.8"
-  - "nightly"
-
-matrix:
-  allow_failures:
-    - python: "nightly"
+before_install:
+  - curl -L https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-`uname -s`-`uname -m` > docker-compose
+  - chmod +x docker-compose
+  - sudo mv docker-compose /usr/local/bin
 
 script:
-  - bash scripts/test.sh
-
-after_success:
-  - codecov
+  - docker-compose build
+  - docker-compose run -e DONTSTART=api api /data/opa/scripts/release-test.sh
