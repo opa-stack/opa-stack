@@ -4,4 +4,4 @@ set -ex
 
 /data/opa/scripts/test.sh
 
-curl -s https://codecov.io/bash | bash
+bash <(curl -s https://codecov.io/bash) -y /data/opa/tests/codecov.yml
