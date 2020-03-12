@@ -12,3 +12,7 @@ before_install:
 script:
   - docker-compose build
   - docker-compose run -e DONTSTART=api `bash <(curl -s https://codecov.io/env)` api /data/opa/scripts/release-test.sh
+
+deploy:
+  provider: script
+  script: bash /data/opa/scripts/release-test.sh
