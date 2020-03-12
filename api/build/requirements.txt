@@ -6,7 +6,6 @@ mypy
 ipython
 pytest
 coverage
-codecov
 pytest-cov
 
 #

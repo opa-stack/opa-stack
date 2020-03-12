@@ -4,4 +4,4 @@ set -ex
 
 /data/opa/scripts/test.sh
 
-codecov
+curl -s https://codecov.io/bash | bash
