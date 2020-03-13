@@ -3,4 +3,4 @@
 set -ex
 
 cd /data/opa/
-pytest --cov=. tests
+pytest --cov=. $@ tests

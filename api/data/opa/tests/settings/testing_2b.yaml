@@ -1,0 +1,3 @@
+testing_2:
+  PLUGIN_PATHS:
+    - "/data/opa/tests/plugins/config_2-b"

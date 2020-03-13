@@ -1,0 +1,4 @@
+testing_1:
+  PLUGIN_PATHS:
+    - "/data/opa/tests/plugins/config_1-b"
+    - dynaconf_merge

@@ -1,3 +1,5 @@
+import sys
+
 from starlette.middleware.cors import CORSMiddleware
 from fastapi import Depends, FastAPI, Header, HTTPException
 
@@ -27,6 +29,5 @@ def get_app():
     return app
 
 
-if __name__ == "opa.main":
-    # Loading from uvicorn..asgi
+if 'uvicorn' in sys.argv[0]:
     app = get_app()
