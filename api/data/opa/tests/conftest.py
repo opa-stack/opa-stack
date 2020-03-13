@@ -36,3 +36,10 @@ def app_c2(monkeypatch):
     monkeypatch.setenv('ENV', 'testing_2')
     client = TestClient(main.get_app())
     yield client
+
+
+@pytest.fixture(scope="function")
+def app_dev(monkeypatch):
+    monkeypatch.setenv('ENV', 'dev')
+    client = TestClient(main.get_app())
+    yield client
