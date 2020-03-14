@@ -33,8 +33,10 @@ def setup_loading(app, compconf, hostname_resolver, startup_func, shutdown_func=
         )
 
     if should_load:
+        logging.debug(f'Adding {startup_func} as startup event')
         app.add_event_handler("startup", startup_func)
         if shutdown_func:
+            logging.debug(f'Adding {startup_func} as shutdown event')
             app.add_event_handler("shutdown", shutdown_func)
 
 

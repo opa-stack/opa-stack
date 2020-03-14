@@ -6,15 +6,15 @@ router = APIRouter()
 
 
 @router.get("/counter-async")
-async def counter_async(airoredis=Depends(get_aioredis)):
-    key = 'incr-async'
+async def counter_async(airoredis=Depends(get_aioredis), key=None):
+    key = key or 'incr-async'
     counter = await airoredis.incr(key)
     return f'Counter is {counter}'
 
 
 @router.get("/counter-sync")
-def counter_sync(walrus=Depends(get_walrus)):
-    key = 'incr-sync'
+def counter_sync(walrus=Depends(get_walrus), key=None):
+    key = key or 'incr-sync'
     counter = walrus.incr(key)
     return f'Counter is {counter}'
 

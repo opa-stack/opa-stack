@@ -1,0 +1,4 @@
+testing_examples:
+  PLUGIN_PATHS:
+    - "/opa-stack/examples/docker-compose/timekeeper/plugins"
+    - "/opa-stack/examples/docker-compose/redis/plugins"

@@ -14,6 +14,11 @@ services:
     environment:
       ENV: dev
 
+    depends_on:
+      - mongo
+      - rabbitmq
+      - redis
+
   mongo:
     image: "mongo:3.6.16"
     environment:

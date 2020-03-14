@@ -18,28 +18,40 @@ def fix_syspath():
     sys.path = original_path
 
 
+"""
+Different app configurations below this point..
+
+If we use with-blocks, we allow FastAPI to run startup/shutdown events, ie, it connects
+to available databases and does some extra work. We do that on some tests, but only when
+needed.
+"""
+
+
 @pytest.fixture(scope="function")
 def app():
-    client = TestClient(main.get_app())
-    yield client
+    yield TestClient(main.get_app())
 
 
 @pytest.fixture(scope="function")
 def app_c1(monkeypatch):
     monkeypatch.setenv('ENV', 'testing_1')
-    client = TestClient(main.get_app())
-    yield client
+    yield TestClient(main.get_app())
 
 
 @pytest.fixture(scope="function")
 def app_c2(monkeypatch):
     monkeypatch.setenv('ENV', 'testing_2')
-    client = TestClient(main.get_app())
-    yield client
+    yield TestClient(main.get_app())
 
 
 @pytest.fixture(scope="function")
 def app_dev(monkeypatch):
     monkeypatch.setenv('ENV', 'dev')
-    client = TestClient(main.get_app())
-    yield client
+    yield TestClient(main.get_app())
+
+
+@pytest.fixture(scope="function")
+def app_examples(monkeypatch):
+    monkeypatch.setenv('ENV', 'testing_examples')
+    with TestClient(main.get_app()) as client:
+        yield client
