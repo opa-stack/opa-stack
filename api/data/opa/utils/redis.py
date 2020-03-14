@@ -2,10 +2,12 @@ import logging
 import aioredis as aioredislib
 import walrus as walruslib
 
+from opa import config
+
 
 class Redis:
     aioredis = None
-    walrud = None
+    walrus = None
 
 
 redis = Redis()
@@ -13,7 +15,9 @@ redis = Redis()
 
 async def connect_to_aioredis():
     logging.info("Connectiong to redis using aioredis")
-    redis.aioredis = await aioredislib.create_redis_pool('redis://redis')
+    redis.aioredis = await aioredislib.create_redis_pool(
+        config.OPTIONAL_COMPONENTS.REDIS.URL
+    )
 
 
 async def close_aioredis_connection():
@@ -27,7 +31,7 @@ async def get_aioredis():
 
 async def connect_to_walrus():
     logging.info("Connectiong to redis using walrus")
-    redis.walrus = walruslib.Database.from_url('redis://redis')
+    redis.walrus = walruslib.Database.from_url(config.OPTIONAL_COMPONENTS.REDIS.URL)
 
     # Raises exception if not able to connect
     redis.walrus.client_id()

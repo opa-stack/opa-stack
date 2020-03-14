@@ -1,0 +1,24 @@
+testing_optional_components_mongo_bogus:
+  OPTIONAL_COMPONENTS:
+    dynaconf_merge: true
+    MONGODB:
+      URL: "mongodb://mongo:mongo@mongo:27017/bogus"
+
+testing_optional_components_redis_bogus:
+  OPTIONAL_COMPONENTS:
+    dynaconf_merge: true
+    REDIS:
+      URL: "redis://mongo"
+
+testing_optional_components_redis_nonexisting_auto:
+  OPTIONAL_COMPONENTS:
+    dynaconf_merge: true
+    REDIS:
+      URL: "redis://abc"
+
+testing_optional_components_redis_nonexisting_required:
+  OPTIONAL_COMPONENTS:
+    dynaconf_merge: true
+    REDIS:
+      LOAD: "yes"
+      URL: "redis://abc"
