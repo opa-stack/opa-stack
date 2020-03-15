@@ -20,7 +20,12 @@ default:
   PLUGIN_BLACKLIST_RE: ""
   PLUGIN_BLACKLIST_TAGS: []
 
-  ALLOWED_HOSTS: ["*"]
+  # CORS
+  ALLOW_ORIGINS: ["*"]
+  ALLOW_CREDENTIALS: true
+  ALLOW_METHODS: ["*"]
+  ALLOW_HEADERS: ["*"]
+
   SECRET_KEY: ""
 
   # Configuration for optional components..
