@@ -2,6 +2,15 @@ default:
   MODE: "prod"
   PROJECT_NAME: "opa-stack"
   PROJECT_DESCRIPTION: ""
+  PROJECT_VERSION: "0.1.0"
+
+  # Urls to automatic documentation. Set to null to disable
+  DOCS_URL: "/docs"
+  REDOC_URL: "/redoc"
+  OPENAPI_URL: "/openapi.json" # Can only be null if DOCS_URL and REDOC_URL is also null
+
+  OPENAPI_PREFIX: ""
+
   PLUGIN_PATHS: []
 
   PLUGIN_WHITELIST_LIST: []
@@ -32,6 +41,11 @@ default:
       LOAD: "auto"
       URL: "redis://redis"
 
+  # Used different places, currently:
+  #  * Setting FastAPI/Starlette debug-mode (https://www.starlette.io/applications/)
+  DEBUG: false
+
+  # Turns on better exceptions, ie, prettier, and with some more info (like variables)
   BETTER_EXCEPTIONS: false
 
   # Python Tools for Visual Studio debug server, running on port 5678

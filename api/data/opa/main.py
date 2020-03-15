@@ -13,7 +13,12 @@ def get_app():
     app = FastAPI(
         title=config.PROJECT_NAME,
         description=config.PROJECT_DESCRIPTION,
-        version="0.0.2",
+        docs_url=config.DOCS_URL,
+        redoc_url=config.REDOC_URL,
+        openapi_url=config.OPENAPI_URL,
+        version=config.PROJECT_VERSION,
+        openapi_prefix=config.OPENAPI_PREFIX,
+        debug=config.DEBUG,
     )
 
     plugin.init(app)
