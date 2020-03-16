@@ -1,0 +1,13 @@
+version: "3.7"
+
+services:
+  api:
+    image: opastack/api:latest
+    ports:
+      - "127.0.0.1:8001:8000"
+    environment:
+      OPA_PLUGIN_PATHS: "/plugins"
+    volumes:
+      - ./plugins:/plugins
+  redis:
+    image: "redis:5"
