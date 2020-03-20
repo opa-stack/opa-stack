@@ -31,20 +31,33 @@ default:
   # Configuration for optional components..
   # They all have a helper-file in ../utils/{component_name.lower()}.py, so check
   # in them if you wonder how these values are used. They are also listed in the docs
-  # @ https://opa-stack.github.io/guide/optional-components.html
+  # @ https://opa-stack.github.io/guide/components.html
   #
   # The LOAD option is always present, and can be one of auto|yes|no, all defaulting to 'auto'.
-  #   * auto: Makes opa-stack look for the component using a simple dns-check. It will then try to
-  #           connect as if you had written "yes", ie, it fails if it is not able to..
+  #   * auto: Makes opa-stack look for the component using a simple dns-check or other simple checks
+  #           Ie.. Check if we "should" be able to use this component.
+  #           It will then try to connect as if you had written "yes", ie, it fails if it is not able to..
   #   * yes: Makes the coponent required
   #   * no: Makes it not check at all.
+
   OPTIONAL_COMPONENTS:
     MONGODB:
       LOAD: "auto"
-      URL: "mongodb://mongo:mongo@mongo:27017/opa"
-    REDIS:
+      DRIVER: "mongodb-async-motor"
+      OPTS:
+        URL: "mongodb://mongo:mongo@mongo:27017/opa"
+
+    WALRUS:
       LOAD: "auto"
-      URL: "redis://redis"
+      DRIVER: "redis-walrus"
+      OPTS:
+        URL: "redis://redis"
+
+    AIOREDIS:
+      LOAD: "auto"
+      DRIVER: "redis-aioredis"
+      OPTS:
+        URL: "redis://redis"
 
   # Used different places, currently:
   #  * Setting FastAPI/Starlette debug-mode (https://www.starlette.io/applications/)

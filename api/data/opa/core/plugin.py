@@ -5,14 +5,37 @@ import json
 import logging
 import pkgutil
 from importlib import import_module
+from typing import Dict, Any, List
 
 from fastapi import FastAPI
 
-from opa.utils import unique
+from opa.utils import unique, filter_dict_to_function
 from opa import config
 
 
+class BasePlugin:
+    pass
+
+
+class Component:
+    instance = None
+
+    def get(self):
+        return self.instance
+
+
+import asyncio
+
+from collections import defaultdict
+
+
 class PluginManager:
+    status: Dict[str, Dict] = defaultdict(dict)
+    setup_queue: List[Dict[str, Any]] = []
+
+    component_drivers: Dict[str, Component] = {}
+    optional_components: Dict[str, Component] = {}
+
     def setup(self):
         """
         Hook-definitions, ie, valid hooks and their config
@@ -33,6 +56,45 @@ class PluginManager:
         if missing:
             raise Exception(f'Missing required hooks: {missing}')
 
+    def register_driver(self, name: str, component: Component):
+        name = name.lower()
+        if name in self.component_drivers:
+            raise Exception(
+                f'Driver with this name ({name}) already exists. CaSe of driver is ignored.'
+            )
+        logging.debug(f'Registered driver {name}')
+        self.component_drivers[name] = component
+
+    async def load_components(self):
+        """
+        Preload the components that we are going to use.
+        The components will be available using singletons that represent connections.
+        We will therefor reuse each components connection and connect once per
+        definition in config.OPTIONAL_COMPONENTS
+        """
+        for name, values in config.OPTIONAL_COMPONENTS.items():
+            name = name.lower()
+            load = values.get('LOAD', 'auto')
+            if load == 'no':
+                continue
+
+            drivername = values.get('DRIVER')
+            try:
+                driver = self.component_drivers[drivername]
+            except KeyError:
+                raise Exception(
+                    f'Invalid driver specified ({drivername}), no way to handle it'
+                )
+
+            driverinstance = driver()
+
+            if asyncio.iscoroutinefunction(driverinstance.connect):
+                await driverinstance.connect(opts=values.get('OPTS', {}))
+            else:
+                connection_status = driverinstance.connect(opts=values.get('OPTS', {}))
+
+            self.optional_components[name] = driverinstance
+
     def register_hook(self, name, func):
         if name not in self.hooks:
             raise Exception(f'Invalid plugin hook "{name}", see docs for valid hooks.')
@@ -47,6 +109,13 @@ class PluginManager:
 
         self.hooks[name]['func'] = func
 
+    def run_setup_queue(self, app):
+        for plugin in self.setup_queue:
+            if hasattr(plugin['obj'], 'setup'):
+                logging.debug('Plugin had a setup function, running')
+                params = filter_dict_to_function({'app': app}, plugin['obj'].setup)
+                self.status[plugin['name']]['setup'] = plugin['obj'].setup(**params)
+
     def call(self, name, *args, **kwargs):
         return self.hooks[name]['func'](*args, **kwargs)
 
@@ -57,7 +126,7 @@ class PluginManager:
 plugin_manager = PluginManager()  # Singleton used around the app
 
 
-def init(app):
+async def startup():
     plugin_manager.setup()
 
     """
@@ -157,12 +226,35 @@ def init(app):
         logging.info(f'Loading plugin: {plugin.name}')
         mod = import_module(plugin.name)
 
-        if hasattr(mod, 'setup'):
-            logging.debug('Plugin had a setup function, running')
-            # There might exists utils plugins, that are there only to expose fuctions or classes to others
-            mod.setup(register_hook=plugin_manager.register_hook, app=app)
+        if not hasattr(mod, 'Plugin'):
+            # Might just be some helper utilities wanted
+            continue
 
+        obj = mod.Plugin()
+
+        plugin_manager.setup_queue.append({'obj': obj, 'name': plugin.name})
+
+        if hasattr(obj, 'startup'):
+            plugin_manager.status[plugin.name]['startup'] = obj.startup(
+                **filter_dict_to_function(
+                    {
+                        'register_hook': plugin_manager.register_hook,
+                        'register_driver': plugin_manager.register_driver,
+                    },
+                    obj.startup,
+                )
+            )
+
+    await plugin_manager.load_components()
     plugin_manager.check_required()
+
+
+async def shutdown():
+    pass
+
+
+def setup(app):
+    plugin_manager.run_setup_queue(app)
 
 
 def get_plugin_manager() -> PluginManager:

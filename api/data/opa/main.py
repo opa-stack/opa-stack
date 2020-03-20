@@ -7,6 +7,13 @@ from opa import config, init_configuration
 from opa.core import plugin
 
 
+def plugin_setup():
+    """
+    This function is called after app is available (via on_startup)
+    """
+    plugin.setup(app)
+
+
 def get_app():
     init_configuration()
 
@@ -19,9 +26,9 @@ def get_app():
         version=config.PROJECT_VERSION,
         openapi_prefix=config.OPENAPI_PREFIX,
         debug=config.DEBUG,
+        on_startup=[plugin.startup, plugin_setup],
+        on_shutdown=[plugin.shutdown],
     )
-
-    plugin.init(app)
 
     app.add_middleware(
         CORSMiddleware,
