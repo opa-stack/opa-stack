@@ -1,8 +1,7 @@
+from opa.core.plugin import BasePlugin
+
+
 from . import model
-
-
-def setup(**kwargs):
-    pass
 
 
 def test():

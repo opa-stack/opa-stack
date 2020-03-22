@@ -1,19 +1,15 @@
-import string
-import random
 import logging
 import datetime
+import secrets
 
 from time import sleep
 from asyncio import sleep as async_sleep
 
 from fastapi import APIRouter
 
+from opa.core.plugin import BasePlugin
+
 router = APIRouter()
-
-
-def get_random_string():
-    return ''.join(random.choice(string.ascii_lowercase) for i in range(5))
-
 
 # Using tags helps separate your items from the also included demo-plugins
 @router.get("/time", tags=["timekeeper"])
@@ -35,7 +31,7 @@ async def async_sleeper(seconds: int):
     I sleep for some seconds, then return how long I slept.. Neat!
     But I'm also async, so it shoulnt block anything..
     """
-    randstring = get_random_string()
+    randstring = secrets.token_urlsafe(5)
     logging.info(f'Start async sleep for ({randstring}) for {seconds}')
     await async_sleep(seconds)
     logging.info(f'Ending async sleep for ({randstring}) for {seconds}')
@@ -47,12 +43,13 @@ def sync_sleeper(seconds: int):
     """
     I'm almost like sleep-async, but I'm not async.. That means that I block python when I do nothing.
     """
-    randstring = get_random_string()
+    randstring = secrets.token_urlsafe(5)
     logging.info(f'Start sync sleep for ({randstring}) for {seconds}')
     sleep(seconds)
     logging.info(f'Ending sync sleep for ({randstring}) for {seconds}')
     return f'I slept for {seconds} seconds'
 
 
-def setup(app, **kwargs):
-    app.include_router(router)
+class Plugin(BasePlugin):
+    def setup(self, app):
+        app.include_router(router)

@@ -8,7 +8,7 @@ method are called the same way on both normal and async functions.
 """
 
 from fastapi import Depends, APIRouter
-from opa.core.plugin import get_plugin_manager, PluginManager
+from opa.core.plugin import get_plugin_manager, PluginManager, BasePlugin
 
 router = APIRouter()
 
@@ -29,6 +29,9 @@ async def get_version_async():
     return 2
 
 
-def setup(register_hook, app, **kwargs):
-    register_hook('version', get_version)
-    app.include_router(router)
+class Plugin(BasePlugin):
+    def startup(self, register_hook):
+        register_hook('version', get_version)
+
+    def setup(self, app):
+        app.include_router(router)

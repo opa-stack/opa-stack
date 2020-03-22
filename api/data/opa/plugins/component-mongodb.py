@@ -3,12 +3,16 @@ import logging
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from opa.core.plugin import Component, BasePlugin
+from opa.utils import host_exists
 
 
 class MongodbMotorAsync(Component):
     instance: AsyncIOMotorClient = None
 
     async def connect(self, opts):
+        if not host_exists(opts.URL, 'database-url'):
+            return None
+
         logging.info("Connecting to mongodb database..")
         self.instance = AsyncIOMotorClient(
             opts.URL,

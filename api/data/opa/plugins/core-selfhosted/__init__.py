@@ -10,6 +10,7 @@ from fastapi import APIRouter
 from starlette.staticfiles import StaticFiles
 
 from opa import config
+from opa.core.plugin import BasePlugin
 
 
 def setup(app, **kwargs):
@@ -41,3 +42,7 @@ def setup(app, **kwargs):
                 title=app.title + " - ReDoc",
                 redoc_js_url="/core-js-static/redoc.standalone.js",
             )
+
+
+class Plugin(BasePlugin):
+    ...

@@ -30,16 +30,21 @@ from collections import defaultdict
 
 
 class PluginManager:
-    status: Dict[str, Dict] = defaultdict(dict)
-    setup_queue: List[Dict[str, Any]] = []
+    status: Dict[str, Dict]
+    setup_queue: List[Dict[str, Any]]
 
-    component_drivers: Dict[str, Component] = {}
-    optional_components: Dict[str, Component] = {}
+    component_drivers: Dict[str, Component]
+    optional_components: Dict[str, Component]
 
-    def setup(self):
+    hooks: Dict[str, Dict]
+
+    def __init__(self):
+        self.status = defaultdict(dict)
+        self.setup_queue = []
+        self.component_drivers = {}
+        self.optional_components = {}
+
         """
-        Hook-definitions, ie, valid hooks and their config
-
         Each hook have multiple options, those are.
           * required: True|False, if app-start should fail if it is missing.
           * mode: one of
@@ -92,7 +97,7 @@ class PluginManager:
                 await driverinstance.connect(opts=values.get('OPTS', {}))
             else:
                 connection_status = driverinstance.connect(opts=values.get('OPTS', {}))
-
+                print('load_components', name, driverinstance.instance)
             self.optional_components[name] = driverinstance
 
     def register_hook(self, name, func):
@@ -123,11 +128,12 @@ class PluginManager:
         return await self.hooks[name]['func'](*args, **kwargs)
 
 
-plugin_manager = PluginManager()  # Singleton used around the app
+plugin_manager: PluginManager
 
 
 async def startup():
-    plugin_manager.setup()
+    global plugin_manager
+    plugin_manager = PluginManager()  # Singleton used around the app
 
     """
     Plugins are imported from multiple paths with these rules:
@@ -246,6 +252,7 @@ async def startup():
             )
 
     await plugin_manager.load_components()
+    print('startup', plugin_manager.optional_components['walrus'])
     plugin_manager.check_required()
 
 
@@ -259,3 +266,23 @@ def setup(app):
 
 def get_plugin_manager() -> PluginManager:
     return plugin_manager
+
+
+def get_component(name):
+    """
+    Returns a function to get a component instance.
+    """
+
+    def inner():
+        try:
+            return plugin_manager.optional_components[name].instance
+        except KeyError:
+            raise Exception(
+                f'Invalid component "{name}", valid components are: {list(plugin_manager.optional_components.keys())}'
+            )
+
+    return inner
+
+
+def get_redis():
+    return plugin_manager.component_drivers['redis-walrus'].instance

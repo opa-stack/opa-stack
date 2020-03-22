@@ -4,6 +4,7 @@ from secrets import token_urlsafe
 from fastapi import BackgroundTasks, APIRouter, Depends
 
 from opa.utils.redis import get_walrus
+from opa.core.plugin import BasePlugin
 
 router = APIRouter()
 
@@ -30,5 +31,6 @@ async def runone_get(walrus=Depends(get_walrus)):
     return {"current_task": walrus.get('runone')}
 
 
-def setup(app, **kwargs):
-    app.include_router(router)
+class Plugin(BasePlugin):
+    def setup(self, app):
+        app.include_router(router)

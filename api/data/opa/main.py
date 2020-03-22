@@ -6,6 +6,8 @@ from fastapi import Depends, FastAPI, Header, HTTPException
 from opa import config, init_configuration
 from opa.core import plugin
 
+app: FastAPI
+
 
 def plugin_setup():
     """
@@ -14,7 +16,8 @@ def plugin_setup():
     plugin.setup(app)
 
 
-def get_app():
+def start_app():
+    global app
     init_configuration()
 
     app = FastAPI(
@@ -42,4 +45,4 @@ def get_app():
 
 
 if 'uvicorn' in sys.argv[0]:
-    app = get_app()
+    start_app()

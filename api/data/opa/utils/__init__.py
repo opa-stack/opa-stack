@@ -25,3 +25,21 @@ def filter_dict_to_function(dict_to_filter, thing_with_kwargs):
         filter_key: dict_to_filter[filter_key] for filter_key in filter_keys
     }
     return filtered_dict
+
+
+def host_exists(data, resolver=None):
+    import socket
+    from databases import DatabaseURL
+
+    if resolver == 'database-url':
+        host = DatabaseURL(data).hostname
+    elif callable(resolver):
+        host = resolver(data)
+    else:
+        host = data
+
+    try:
+        socket.gethostbyname(host)
+        return True
+    except socket.gaierror:
+        return False

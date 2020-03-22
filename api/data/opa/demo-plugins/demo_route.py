@@ -9,6 +9,8 @@ from opa.models.test import Item, Items
 from opa.core.security import get_src_zone, Zone
 from opa.utils.mongodb import AsyncIOMotorClient, AsyncIOMotorDatabase, get_database
 
+from opa.core.plugin import BasePlugin
+
 
 async def create_test_item(db: AsyncIOMotorDatabase, item: Item) -> Item:
     item.s = item.string
@@ -64,5 +66,6 @@ async def get_requestdata(request: Request):
     return {"ip": request.client.host}
 
 
-def setup(app, **kwargs):
-    app.include_router(router)
+class Plugin(BasePlugin):
+    def setup(self, app):
+        app.include_router(router)
