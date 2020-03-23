@@ -21,8 +21,6 @@ class Aioredis(Component):
 
 
 class Walrus(Component):
-    instance = None
-
     def connect(self, opts):
         if not host_exists(opts.URL, 'database-url'):
             return None

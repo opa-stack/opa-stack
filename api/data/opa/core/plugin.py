@@ -97,7 +97,6 @@ class PluginManager:
                 await driverinstance.connect(opts=values.get('OPTS', {}))
             else:
                 connection_status = driverinstance.connect(opts=values.get('OPTS', {}))
-                print('load_components', name, driverinstance.instance)
             self.optional_components[name] = driverinstance
 
     def register_hook(self, name, func):
@@ -252,7 +251,6 @@ async def startup():
             )
 
     await plugin_manager.load_components()
-    print('startup', plugin_manager.optional_components['walrus'])
     plugin_manager.check_required()
 
 
@@ -270,19 +268,15 @@ def get_plugin_manager() -> PluginManager:
 
 def get_component(name):
     """
-    Returns a function to get a component instance.
+    Returns a function to get a component
     """
 
     def inner():
         try:
-            return plugin_manager.optional_components[name].instance
+            return plugin_manager.optional_components[name]
         except KeyError:
             raise Exception(
                 f'Invalid component "{name}", valid components are: {list(plugin_manager.optional_components.keys())}'
             )
 
     return inner
-
-
-def get_redis():
-    return plugin_manager.component_drivers['redis-walrus'].instance
