@@ -1,28 +1,26 @@
 from fastapi import APIRouter, Depends
 
-from opa.utils.redis import get_aioredis, get_walrus
-from opa.core.plugin import BasePlugin, get_component, get_redis, get_plugin_manager
+from opa.core.plugin import BasePlugin, get_component
+from opa.plugins.driver_redis import Walrus
 
 router = APIRouter()
 
 
 @router.get("/counter-async")
 async def counter_async(aioredis=Depends(get_component('aioredis')), key=None):
-    key = key or 'incr-async'
-    counter = await aioredis.incr(key)
+    counter = await aioredis.instance.incr(key or 'incr-async')
     return f'Counter is {counter}'
 
 
 @router.get("/counter-sync")
-def counter_sync(walrus=Depends(get_component('walrus')), key=None):
-    key = key or 'incr-sync'
-    counter = walrus.incr(key)
+def counter_sync(walrus: Walrus = Depends(get_component('walrus')), key=None):
+    counter = walrus.instance.incr(key or 'incr-sync')
     return f'Counter is {counter}'
 
 
 @router.get("/bloom")
 def check_bloom_filter(string: str, walrus=Depends(get_component('walrus'))):
-    bf = walrus.bloom_filter('bf')
+    bf = walrus.instance.bloom_filter('bf')
     return string in bf
 
 
@@ -30,7 +28,7 @@ def check_bloom_filter(string: str, walrus=Depends(get_component('walrus'))):
 def add_bloom_filter(string: str, walrus=Depends(get_component('walrus'))):
     # Waiting for https://github.com/tiangolo/fastapi/issues/1018 to have plain/text input
     # Possible now, but not with generation of the openapi spec..
-    bf = walrus.bloom_filter('bf')
+    bf = walrus.instance.bloom_filter('bf')
     for i in string.split(' '):
         bf.add(i)
 
