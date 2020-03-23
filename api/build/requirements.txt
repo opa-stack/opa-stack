@@ -4,6 +4,7 @@
 black
 mypy
 ipython
+ipdb
 pytest
 coverage
 pytest-cov
@@ -24,6 +25,7 @@ databases       # Not for mongodb but other db's. However, it contains some nift
 email-validator # Might be usefull, also to silence some naging on stdout from other libs
 aioredis        # Async redis
 walrus          # Featurerich redis-client (non-async)
+celery          # Task-queue lib
 # ansible lib..?
 
 #

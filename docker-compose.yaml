@@ -36,7 +36,9 @@ services:
       ME_CONFIG_MONGODB_AUTH_PASSWORD: mongo
 
   rabbitmq:
-    image: "rabbitmq:3.8.2-management"
+    image: "rabbitmq:3.8-management"
+    ports:
+      - "15672:15672" # Management port
 
   redis:
     image: "redis:5.0.7"
