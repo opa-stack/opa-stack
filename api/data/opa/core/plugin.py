@@ -5,7 +5,7 @@ import json
 import logging
 import pkgutil
 from importlib import import_module
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Callable
 
 from fastapi import FastAPI
 
@@ -19,6 +19,7 @@ class BasePlugin:
 
 class Component:
     instance = None
+    hooks: Dict[str, dict]
 
     def get(self):
         return self.instance
@@ -37,6 +38,7 @@ class PluginManager:
     optional_components: Dict[str, Component]
 
     hooks: Dict[str, Dict]
+    _temp_hook_funcs: Dict[str, Callable]
 
     def __init__(self):
         self.status = defaultdict(dict)
@@ -47,12 +49,22 @@ class PluginManager:
         """
         Each hook have multiple options, those are.
           * required: True|False, if app-start should fail if it is missing.
-          * mode: one of
-            * IMMUTABLE: Hook can only be set once, it can not be overwritten.
         """
-        self.hooks = {'version': {'mode': 'IMMUTABLE'}}
+        self.hooks = {'version': {}}
 
-    def check_required(self):
+        self._temp_hook_funcs = {}
+
+    def post_hook_registrations(self):
+        self.finish_hook_registration()
+        self.check_invalid_hooks()
+        self.check_required_hooks()
+
+    def finish_hook_registration(self):
+        for name in self.hooks.keys():
+            if name in self._temp_hook_funcs:
+                self.hooks[name]['func'] = self._temp_hook_funcs[name]
+
+    def check_required_hooks(self):
         missing = []
         for hookname, config in self.hooks.items():
             if config.get('required'):
@@ -60,6 +72,11 @@ class PluginManager:
                     missing.append(hookname)
         if missing:
             raise Exception(f'Missing required hooks: {missing}')
+
+    def check_invalid_hooks(self):
+        for hookname in self._temp_hook_funcs:
+            if not hookname in self.hooks:
+                raise Exception(f'Hook "{hookname}" is not registered for use.')
 
     def register_driver(self, name: str, component: Component):
         name = name.lower()
@@ -99,19 +116,18 @@ class PluginManager:
                 connection_status = driverinstance.connect(opts=values.get('OPTS', {}))
             self.optional_components[name] = driverinstance
 
+    def add_hooks(self, hooks):
+        for k, v in hooks.items():
+            if k in self.hooks:
+                raise Exception(f'Hook "{k}" can only be added once')
+            logging.debug(f'Adding hook {k} with data {v}')
+            self.hooks[k] = v
+
     def register_hook(self, name, func):
-        if name not in self.hooks:
-            raise Exception(f'Invalid plugin hook "{name}", see docs for valid hooks.')
+        if name in self._temp_hook_funcs:
+            raise Exception(f'Hook "{name}" is already handled')
 
-        if (
-            self.hooks[name].get('mode') == 'IMMUTABLE'
-            and self.hooks[name].get('func') is not None
-        ):
-            raise Exception(
-                f'Hook {name} is already occupied and it is marked as IMMUTABLE'
-            )
-
-        self.hooks[name]['func'] = func
+        self._temp_hook_funcs[name] = func
 
     def run_setup_queue(self, app):
         for plugin in self.setup_queue:
@@ -239,6 +255,9 @@ async def startup():
 
         plugin_manager.setup_queue.append({'obj': obj, 'name': plugin.name})
 
+        if hasattr(obj, 'hooks'):
+            plugin_manager.add_hooks(obj.hooks)
+
         if hasattr(obj, 'startup'):
             plugin_manager.status[plugin.name]['startup'] = obj.startup(
                 **filter_dict_to_function(
@@ -251,7 +270,7 @@ async def startup():
             )
 
     await plugin_manager.load_components()
-    plugin_manager.check_required()
+    plugin_manager.post_hook_registrations()
 
 
 async def shutdown():
