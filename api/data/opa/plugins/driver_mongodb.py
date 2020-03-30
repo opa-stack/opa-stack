@@ -2,11 +2,12 @@ import logging
 
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from opa.core.plugin import Component, BasePlugin
+from opa.core.plugin import Driver
 from opa.utils import host_exists
 
 
-class MongodbMotorAsync(Component):
+class MongodbMotorAsync(Driver):
+    name = 'mongodb-async-motor'
     instance: AsyncIOMotorClient = None
 
     async def connect(self, opts):
@@ -31,8 +32,3 @@ class MongodbMotorAsync(Component):
 
     def get(self):
         return self.instance[name or 'opa']
-
-
-class Plugin(BasePlugin):
-    def startup(self, register_driver):
-        register_driver('mongodb-async-motor', MongodbMotorAsync)

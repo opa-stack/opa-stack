@@ -12,6 +12,8 @@ def filter_dict_to_function(dict_to_filter, thing_with_kwargs):
     """
     https://stackoverflow.com/a/44052550/452081
     Filter dict so it fits the signature of a function
+
+    * Dropping 'self'
     """
     import inspect
 
@@ -19,7 +21,7 @@ def filter_dict_to_function(dict_to_filter, thing_with_kwargs):
     filter_keys = [
         param.name
         for param in sig.parameters.values()
-        if param.kind == param.POSITIONAL_OR_KEYWORD
+        if (param.kind == param.POSITIONAL_OR_KEYWORD) and (param.name not in ['self'])
     ]
     filtered_dict = {
         filter_key: dict_to_filter[filter_key] for filter_key in filter_keys

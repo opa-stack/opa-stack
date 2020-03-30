@@ -2,15 +2,16 @@ import logging
 import aioredis as aioredislib
 import walrus as walruslib
 
-from opa.core.plugin import Component, BasePlugin
+from opa.core.plugin import Driver
 from opa.utils import host_exists
 
 
-class Aioredis(Component):
+class Aioredis(Driver):
+    name = 'redis-aioredis'
+
     async def connect(self, opts):
         if not host_exists(opts.URL, 'database-url'):
             return None
-
         logging.info(f"Connectiong to redis using aioredis and {opts}")
 
         self.instance = await aioredislib.create_redis_pool(opts.URL)
@@ -20,7 +21,9 @@ class Aioredis(Component):
         self.instance.wait_closed()
 
 
-class Walrus(Component):
+class Walrus(Driver):
+    name = 'redis-walrus'
+
     def connect(self, opts):
         if not host_exists(opts.URL, 'database-url'):
             return None
@@ -31,9 +34,3 @@ class Walrus(Component):
         # Returns exception if not ready
         self.instance.client_id()
         print('connect.intance', self.instance)
-
-
-class Plugin(BasePlugin):
-    def startup(self, register_driver):
-        register_driver('redis-aioredis', Aioredis)
-        register_driver('redis-walrus', Walrus)

@@ -7,7 +7,7 @@ from asyncio import sleep as async_sleep
 
 from fastapi import APIRouter
 
-from opa.core.plugin import BasePlugin
+from opa.core.plugin import Setup
 
 router = APIRouter()
 
@@ -50,6 +50,6 @@ def sync_sleeper(seconds: int):
     return f'I slept for {seconds} seconds'
 
 
-class Plugin(BasePlugin):
-    def setup(self, app):
+class TimeKeeper(Setup):
+    def __init__(self, app):
         app.include_router(router)

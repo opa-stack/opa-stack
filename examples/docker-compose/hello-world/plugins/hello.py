@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from opa.core.plugin import BasePlugin
+from opa.core.plugin import Setup
 
 router = APIRouter()
 
@@ -9,6 +9,6 @@ def return_string():
     return 'Hello to you'
 
 
-class Plugin(BasePlugin):
-    def setup(self, app):
+class Hello(Setup):
+    def __init__(self, app):
         app.include_router(router)

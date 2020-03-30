@@ -2,8 +2,11 @@ import os
 import re
 import sys
 import json
+import inspect
+import asyncio
 import logging
 import pkgutil
+from collections import defaultdict
 from importlib import import_module
 from typing import Dict, Any, List, Callable
 
@@ -17,75 +20,100 @@ class BasePlugin:
     pass
 
 
-class Component:
-    instance = None
-    hooks: Dict[str, dict]
+class Driver(BasePlugin):
+    name: str
+    instance: Any = None
 
     def get(self):
         return self.instance
 
 
-import asyncio
+class HookDefinition(BasePlugin):
+    required: bool = False
+    _used: bool = False
 
-from collections import defaultdict
+
+class Hook(BasePlugin):
+    name: str
+    order: int = 0
+
+
+class Setup(BasePlugin):
+    ...
+
+
+def get_defined_plugins(mod):
+    returndata = {'hook-definitions': [], 'hooks': [], 'drivers': [], 'setup': []}
+
+    for name, obj in inspect.getmembers(mod, inspect.isclass):
+        if mod.__name__ != obj.__module__:
+            # We don't want to load plugins/modules if they are imported, ie 'from ... import AnotherPlugin'
+            continue
+
+        if obj is Hook or obj is Driver or obj is Setup:
+            continue
+
+        if issubclass(obj, Hook):
+            returndata['hooks'].append(obj)
+        elif issubclass(obj, HookDefinition):
+            returndata['hook-definitions'].append(obj)
+        elif issubclass(obj, Driver):
+            returndata['drivers'].append(obj)
+        elif issubclass(obj, Setup):
+            returndata['setup'].append(obj)
+    return returndata
 
 
 class PluginManager:
     status: Dict[str, Dict]
-    setup_queue: List[Dict[str, Any]]
 
-    component_drivers: Dict[str, Component]
-    optional_components: Dict[str, Component]
-
-    hooks: Dict[str, Dict]
-    _temp_hook_funcs: Dict[str, Callable]
+    drivers: Dict[str, Driver]
+    optional_components: Dict[str, Driver]
+    hooks: Dict[str, List[Hook]]
+    hook_definitions: Dict[str, Hook]
 
     def __init__(self):
         self.status = defaultdict(dict)
-        self.setup_queue = []
-        self.component_drivers = {}
+        self.drivers = {}
         self.optional_components = {}
+        self.hooks = defaultdict(list)
+        self.hook_definitions = {}
 
-        """
-        Each hook have multiple options, those are.
-          * required: True|False, if app-start should fail if it is missing.
-        """
-        self.hooks = {'version': {}}
+    def post_hook(self):
+        final_hooks: Dict[str, Hook] = {}
+        for hook_name, hooks in self.hooks.items():
+            definition = self.hook_definitions.get(hook_name)
+            try:
+                hook_to_use = sorted(hooks, key=lambda x: x.order)[-1]
+            except IndexError:
+                continue
 
-        self._temp_hook_funcs = {}
+            if definition:
+                definition._used = True
+            final_hooks[hook_name] = hook_to_use
 
-    def post_hook_registrations(self):
-        self.finish_hook_registration()
-        self.check_invalid_hooks()
-        self.check_required_hooks()
+        should_be_used = [
+            name
+            for name, definition in self.hook_definitions.items()
+            if all([definition.required, not definition._used])
+        ]
+        if should_be_used:
+            raise Exception(f'Hooks that should be registered: {should_be_used}')
 
-    def finish_hook_registration(self):
-        for name in self.hooks.keys():
-            if name in self._temp_hook_funcs:
-                self.hooks[name]['func'] = self._temp_hook_funcs[name]
+        self.hooks = final_hooks
 
-    def check_required_hooks(self):
-        missing = []
-        for hookname, config in self.hooks.items():
-            if config.get('required'):
-                if not callable(config.get('func')):
-                    missing.append(hookname)
-        if missing:
-            raise Exception(f'Missing required hooks: {missing}')
-
-    def check_invalid_hooks(self):
-        for hookname in self._temp_hook_funcs:
-            if not hookname in self.hooks:
-                raise Exception(f'Hook "{hookname}" is not registered for use.')
-
-    def register_driver(self, name: str, component: Component):
-        name = name.lower()
-        if name in self.component_drivers:
+    def register_driver(self, driver: Driver):
+        name = driver.name.lower()
+        if name in self.drivers:
+            if self.drivers[name] is driver:
+                # This might happen example if we import a driver-class inside a plugin-file.
+                # It should be valid, example if you need it for typing.
+                return None
             raise Exception(
                 f'Driver with this name ({name}) already exists. CaSe of driver is ignored.'
             )
         logging.debug(f'Registered driver {name}')
-        self.component_drivers[name] = component
+        self.drivers[name] = driver
 
     async def load_components(self):
         """
@@ -102,13 +130,14 @@ class PluginManager:
 
             drivername = values.get('DRIVER')
             try:
-                driver = self.component_drivers[drivername]
+                driver = self.drivers[drivername]
             except KeyError:
                 raise Exception(
                     f'Invalid driver specified ({drivername}), no way to handle it'
                 )
 
             driverinstance = driver()
+            driverinstance.pm = self
 
             if asyncio.iscoroutinefunction(driverinstance.connect):
                 await driverinstance.connect(opts=values.get('OPTS', {}))
@@ -116,37 +145,43 @@ class PluginManager:
                 connection_status = driverinstance.connect(opts=values.get('OPTS', {}))
             self.optional_components[name] = driverinstance
 
-    def add_hooks(self, hooks):
-        for k, v in hooks.items():
-            if k in self.hooks:
-                raise Exception(f'Hook "{k}" can only be added once')
-            logging.debug(f'Adding hook {k} with data {v}')
-            self.hooks[k] = v
+    def register_hook_definition(self, obj):
+        try:
+            name = obj.name
+        except AttributeError:
+            name = obj.__name__
 
-    def register_hook(self, name, func):
-        if name in self._temp_hook_funcs:
-            raise Exception(f'Hook "{name}" is already handled')
+        if name in self.hook_definitions:
+            raise Exception(
+                f'There can only be 1 hook-definition per hook-name. "{name}" is already registered'
+            )
 
-        self._temp_hook_funcs[name] = func
+        self.hook_definitions[name] = obj
 
-    def run_setup_queue(self, app):
-        for plugin in self.setup_queue:
-            if hasattr(plugin['obj'], 'setup'):
-                logging.debug('Plugin had a setup function, running')
-                params = filter_dict_to_function({'app': app}, plugin['obj'].setup)
-                self.status[plugin['name']]['setup'] = plugin['obj'].setup(**params)
+    def register_hook(self, obj):
+        try:
+            name = obj.name
+        except AttributeError:
+            name = obj.__name__
+
+        self.hooks[name].append(obj())
+
+    def run_setup(self, obj, params):
+        params = filter_dict_to_function(params, obj.__init__)
+        name = f'{obj.__module__}.{obj.__name__}'
+        self.status[name]['init'] = obj(**params)
 
     def call(self, name, *args, **kwargs):
-        return self.hooks[name]['func'](*args, **kwargs)
+        return self.hooks[name].run(*args, **kwargs)
 
     async def call_async(self, name, *args, **kwargs):
-        return await self.hooks[name]['func'](*args, **kwargs)
+        return await self.hooks[name].run(*args, **kwargs)
 
 
 plugin_manager: PluginManager
 
 
-async def startup():
+async def startup(app):
     global plugin_manager
     plugin_manager = PluginManager()  # Singleton used around the app
 
@@ -186,6 +221,8 @@ async def startup():
 
     sys_paths = sys.path + PLUGIN_PATHS
     sys.path = unique(sys_paths)
+
+    plugins_to_load = defaultdict(list)
 
     for plugin in pkgutil.iter_modules(PLUGIN_PATHS):
         allow_match = os.path.join(plugin.module_finder.path, plugin.name)
@@ -247,38 +284,27 @@ async def startup():
         logging.info(f'Loading plugin: {plugin.name}')
         mod = import_module(plugin.name)
 
-        if not hasattr(mod, 'Plugin'):
-            # Might just be some helper utilities wanted
-            continue
+        defined_plugins = get_defined_plugins(mod)
+        for pt in ['hook-definitions', 'hooks', 'drivers', 'setup']:
+            plugins_to_load[pt] += defined_plugins[pt]
 
-        obj = mod.Plugin()
+    for hook_definition in plugins_to_load['hook-definitions']:
+        plugin_manager.register_hook_definition(hook_definition)
 
-        plugin_manager.setup_queue.append({'obj': obj, 'name': plugin.name})
+    for hook in plugins_to_load['hooks']:
+        plugin_manager.register_hook(hook)
+    plugin_manager.post_hook()
 
-        if hasattr(obj, 'hooks'):
-            plugin_manager.add_hooks(obj.hooks)
-
-        if hasattr(obj, 'startup'):
-            plugin_manager.status[plugin.name]['startup'] = obj.startup(
-                **filter_dict_to_function(
-                    {
-                        'register_hook': plugin_manager.register_hook,
-                        'register_driver': plugin_manager.register_driver,
-                    },
-                    obj.startup,
-                )
-            )
-
+    for driver in plugins_to_load['drivers']:
+        plugin_manager.register_driver(driver)
     await plugin_manager.load_components()
-    plugin_manager.post_hook_registrations()
+
+    for setup in plugins_to_load['setup']:
+        plugin_manager.run_setup(setup, {'app': app})
 
 
 async def shutdown():
     pass
-
-
-def setup(app):
-    plugin_manager.run_setup_queue(app)
 
 
 def get_plugin_manager() -> PluginManager:

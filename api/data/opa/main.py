@@ -9,11 +9,11 @@ from opa.core import plugin
 app: FastAPI
 
 
-def plugin_setup():
+async def plugin_startup():
     """
     This function is called after app is available (via on_startup)
     """
-    plugin.setup(app)
+    await plugin.startup(app)
 
 
 def start_app():
@@ -29,7 +29,7 @@ def start_app():
         version=config.PROJECT_VERSION,
         openapi_prefix=config.OPENAPI_PREFIX,
         debug=config.DEBUG,
-        on_startup=[plugin.startup, plugin_setup],
+        on_startup=[plugin_startup],
         on_shutdown=[plugin.shutdown],
     )
 

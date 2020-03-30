@@ -1,6 +1,52 @@
+import logging
+
+from opa.core.plugin import Driver, Hook, Setup
+from opa.utils import host_exists
+
+
+class ahook(Hook):
+    name = 'hookname'
+    order = 0
+
+    def run(self):
+        print('running hook')
+
+
+class Celery(Driver):
+    name = 'celery'
+
+    def connect(self, opts):
+        print('connecting celery')
+        # if not host_exists(opts.URL, 'database-url'):
+        #     return None
+
+        logging.info(f"Connectiong to celery using {opts}")
+
+        self.instance = None
+
+    def disconnect(self):
+        pass
+
+
+from fastapi import FastAPI, BackgroundTasks
+
+from opa.utils import celery_app
+
+from fastapi import APIRouter
+from opa.core.plugin import BasePlugin
+
+router = APIRouter()
+
+
+@router.get("/testa")
+async def root():
+    return {"message": "test"}
+
+
 from fastapi import APIRouter, Depends
 
-from opa.core.plugin import Setup, get_component
+from opa.core.plugin import BasePlugin, get_component
+
 from opa.plugins.driver_redis import Walrus
 
 router = APIRouter()
@@ -13,7 +59,7 @@ async def counter_async(aioredis=Depends(get_component('aioredis')), key=None):
 
 
 @router.get("/counter-sync")
-def counter_sync(walrus: Walrus = Depends(get_component('walrus')), key=None):
+def counter_sync(walrus=Depends(get_component('walrus')), key=None):
     counter = walrus.instance.incr(key or 'incr-sync')
     return f'Counter is {counter}'
 
@@ -35,6 +81,7 @@ def add_bloom_filter(string: str, walrus=Depends(get_component('walrus'))):
     return f'Added entries'
 
 
-class RedisFun(Setup):
+class Test(Setup):
     def __init__(self, app):
+        print('test-setup')
         app.include_router(router)
