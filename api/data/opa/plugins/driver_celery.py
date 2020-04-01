@@ -1,12 +1,15 @@
 import logging
 
-from opa.core.plugin import Driver, Hook, Setup
+from opa.core.plugin import Driver, Hook, Setup, HookDefinition
 from opa.utils import host_exists
+
+
+class hookname(HookDefinition):
+    ...
 
 
 class ahook(Hook):
     name = 'hookname'
-    order = 0
 
     def run(self):
         print('running hook')

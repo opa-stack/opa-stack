@@ -16,30 +16,45 @@ from opa.core.plugin import (
 router = APIRouter()
 
 
-class version(HookDefinition):
+class async_version(HookDefinition):
     required = True
+    is_async = True
+    name = 'async-version'
+
+
+class sync_version(HookDefinition):
+    required = True
+    name = 'sync-version'
 
 
 @router.get("/demo-hook/version", tags=["demo"])
-def show_version(pm: PluginManager = Depends(get_plugin_manager)):
-    # pm.call will be another place in the codebase, showing it here is just for show..
-    # pm.call can be async or normal, but remember to register the correct function
-    return pm.call('version')
+async def show_version(pm: PluginManager = Depends(get_plugin_manager)):
+    async_version = await pm.call_async('async-version')
+    sync_version = pm.call('sync-version')
+    return {'sync-version': sync_version, 'async-version': async_version}
 
 
 class hook_sync(Hook):
-    name = 'version'
+    name = 'sync-version'
 
     def run(self):
         return 1
 
 
-class hook_async(Hook):
-    name = 'version'
+class hook_async_a(Hook):
+    name = 'async-version'
+    order = 2
 
     async def run(self):
-        # You can run async code in here..
         return 2
+
+
+class hook_async_b(Hook):
+    name = 'async-version'
+    order = 2
+
+    async def run(self):
+        return 3
 
 
 class Demo(Setup):

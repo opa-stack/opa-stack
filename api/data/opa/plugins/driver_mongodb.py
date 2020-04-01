@@ -14,7 +14,6 @@ class MongodbMotorAsync(Driver):
         if not host_exists(opts.URL, 'database-url'):
             return None
 
-        logging.info("Connecting to mongodb database..")
         self.instance = AsyncIOMotorClient(
             opts.URL,
             socketTimeoutMS=1000,
@@ -27,8 +26,7 @@ class MongodbMotorAsync(Driver):
         logging.debug(info)
 
     async def disconnect(self):
-        logging.info("Closing mongodb connection")
         self.instance.close()
 
-    def get(self):
+    def get_instance(self):
         return self.instance[name or 'opa']

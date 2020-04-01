@@ -59,6 +59,12 @@ default:
       OPTS:
         URL: "redis://redis"
 
+    CELERY:
+      LOAD: "auto"
+      DRIVER: "celery"
+      OPTS:
+        URL: "pyamqp://guest@localhost//"
+
   # Used different places, currently:
   #  * Setting FastAPI/Starlette debug-mode (https://www.starlette.io/applications/)
   DEBUG: false

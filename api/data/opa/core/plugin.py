@@ -24,12 +24,13 @@ class Driver(BasePlugin):
     name: str
     instance: Any = None
 
-    def get(self):
+    def get_instance(self):
         return self.instance
 
 
 class HookDefinition(BasePlugin):
     required: bool = False
+    is_async: bool = False
     _used: bool = False
 
 
@@ -138,12 +139,21 @@ class PluginManager:
 
             driverinstance = driver()
             driverinstance.pm = self
+            opts = opts = values.get('OPTS', {})
 
             if asyncio.iscoroutinefunction(driverinstance.connect):
-                await driverinstance.connect(opts=values.get('OPTS', {}))
+                await driverinstance.connect(opts)
+                if load == 'yes' or driverinstance.instance is not None:
+                    if hasattr(driverinstance, 'validate'):
+                        await driverinstance.validate()
             else:
-                connection_status = driverinstance.connect(opts=values.get('OPTS', {}))
+                driverinstance.connect(opts)
+                if load == 'yes' or driverinstance.instance is not None:
+                    if hasattr(driverinstance, 'validate'):
+                        driverinstance.validate()
             self.optional_components[name] = driverinstance
+
+            logging.info(f'Connecting to {name} with driver {drivername}, using {opts}')
 
     def register_hook_definition(self, obj):
         try:
@@ -164,6 +174,24 @@ class PluginManager:
         except AttributeError:
             name = obj.__name__
 
+        try:
+            hook_definition = self.hook_definitions[name]
+        except KeyError:
+            raise Exception(
+                f'There are no hook-definition for hook "{name}", are you using the correct name?'
+            )
+
+        if hook_definition.is_async:
+            if not asyncio.iscoroutinefunction(obj.run):
+                raise Exception(
+                    f'Hook-definition is marked as async but the function is not ({obj.run}).'
+                )
+        else:
+            if asyncio.iscoroutinefunction(obj.run):
+                raise Exception(
+                    f'Hook-definition is not marked as async, but is.. Mark it as async or make it sync: {obj.run}'
+                )
+
         self.hooks[name].append(obj())
 
     def run_setup(self, obj, params):
@@ -172,9 +200,20 @@ class PluginManager:
         self.status[name]['init'] = obj(**params)
 
     def call(self, name, *args, **kwargs):
-        return self.hooks[name].run(*args, **kwargs)
+        func = self.hooks[name].run
+        if asyncio.iscoroutinefunction(func):
+            raise Exception(
+                f'The hook function ({func}) is async and should not be called using non-async calls. Call it using "await call_async()"'
+            )
+        return func(*args, **kwargs)
 
     async def call_async(self, name, *args, **kwargs):
+        func = self.hooks[name].run
+        if not asyncio.iscoroutinefunction(func):
+            raise Exception(
+                f'The hook function ({func}) is not async call it using "call(..)"'
+            )
+
         return await self.hooks[name].run(*args, **kwargs)
 
 
@@ -300,7 +339,7 @@ async def startup(app):
     await plugin_manager.load_components()
 
     for setup in plugins_to_load['setup']:
-        plugin_manager.run_setup(setup, {'app': app})
+        plugin_manager.run_setup(setup, {'app': app, 'pm': plugin_manager})
 
 
 async def shutdown():
