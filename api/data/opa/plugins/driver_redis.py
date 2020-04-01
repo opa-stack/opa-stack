@@ -9,11 +9,11 @@ from opa.utils import host_exists
 class Aioredis(Driver):
     name = 'redis-aioredis'
 
-    async def connect(self, opts):
-        if not host_exists(opts.URL, 'database-url'):
-            return None
+    async def connect(self):
+        if not host_exists(self.opts.URL, 'database-url'):
+            return False
 
-        self.instance = await aioredislib.create_redis_pool(opts.URL)
+        self.instance = await aioredislib.create_redis_pool(self.opts.URL)
 
     async def disconnect(self):
         self.instance.close()
@@ -23,11 +23,11 @@ class Aioredis(Driver):
 class Walrus(Driver):
     name = 'redis-walrus'
 
-    def connect(self, opts):
-        if not host_exists(opts.URL, 'database-url'):
-            return None
+    def connect(self):
+        if not host_exists(self.opts.URL, 'database-url'):
+            return False
 
-        self.instance = walruslib.Database.from_url(opts.URL)
+        self.instance = walruslib.Database.from_url(self.opts.URL)
 
     def validate(self):
         self.instance.client_id()

@@ -18,12 +18,12 @@ class ahook(Hook):
 class Celery(Driver):
     name = 'celery'
 
-    def connect(self, opts):
+    def connect(self):
         print('connecting celery')
         # if not host_exists(opts.URL, 'database-url'):
         #     return None
 
-        logging.info(f"Connectiong to celery using {opts}")
+        logging.info(f"Connectiong to celery using {self.opts}")
 
         self.instance = None
 

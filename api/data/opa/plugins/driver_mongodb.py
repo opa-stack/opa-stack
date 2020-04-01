@@ -10,12 +10,12 @@ class MongodbMotorAsync(Driver):
     name = 'mongodb-async-motor'
     instance: AsyncIOMotorClient = None
 
-    async def connect(self, opts):
-        if not host_exists(opts.URL, 'database-url'):
-            return None
+    async def connect(self):
+        if not host_exists(self.opts.URL, 'database-url'):
+            return False
 
         self.instance = AsyncIOMotorClient(
-            opts.URL,
+            self.opts.URL,
             socketTimeoutMS=1000,
             connectTimeoutMS=1000,
             serverSelectionTimeoutMS=1000,

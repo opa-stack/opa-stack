@@ -35,10 +35,9 @@ def test_nonexist_redis_auto(monkeypatch):
         pass
 
 
-#
-# def test_nonexist_redis_required(monkeypatch):
-#     monkeypatch.setenv('ENV', 'testing_optional_components_redis_nonexisting_required')
-#
-#     with pytest.raises(gaierror, match=r".*Name or service not known.*"):
-#         with TestClient(main.start_app()):
-#             pass
+def test_nonexist_redis_required(monkeypatch):
+    monkeypatch.setenv('ENV', 'testing_optional_components_redis_nonexisting_required')
+
+    with pytest.raises(Exception, match=r".*Connect pre-check failed for.*"):
+        with TestClient(main.start_app()):
+            pass

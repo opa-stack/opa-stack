@@ -23,6 +23,33 @@ class BasePlugin:
 class Driver(BasePlugin):
     name: str
     instance: Any = None
+    opts: Dict[str, Any]
+    pm: 'PluginManager'
+
+    def __init__(self, opts=None):
+        self.opts = opts or {}
+
+    def _pre_connection_check(self, connectionstatus, load):
+        if connectionstatus == False:  # if no host found
+            if load == 'yes':
+                raise Exception(
+                    f'Connect pre-check failed for {self.name}, as if the host is not there? Options {self.opts}'
+                )
+            else:
+                return False
+
+        if hasattr(self, 'validate'):
+            return True
+
+    def initialize(self, load=None):
+        connectionstatus = self.connect()
+        if self._pre_connection_check(connectionstatus, load):
+            self.validate()
+
+    async def initialize_async(self, load=None):
+        connectionstatus = await self.connect()
+        if self._pre_connection_check(connectionstatus, load):
+            await self.validate()
 
     def get_instance(self):
         return self.instance
@@ -137,23 +164,18 @@ class PluginManager:
                     f'Invalid driver specified ({drivername}), no way to handle it'
                 )
 
-            driverinstance = driver()
+            driverinstance = driver(opts=values.get('OPTS', {}))
             driverinstance.pm = self
-            opts = opts = values.get('OPTS', {})
 
             if asyncio.iscoroutinefunction(driverinstance.connect):
-                await driverinstance.connect(opts)
-                if load == 'yes' or driverinstance.instance is not None:
-                    if hasattr(driverinstance, 'validate'):
-                        await driverinstance.validate()
+                await driverinstance.initialize_async(load=load)
             else:
-                driverinstance.connect(opts)
-                if load == 'yes' or driverinstance.instance is not None:
-                    if hasattr(driverinstance, 'validate'):
-                        driverinstance.validate()
+                driverinstance.initialize(load=load)
             self.optional_components[name] = driverinstance
 
-            logging.info(f'Connecting to {name} with driver {drivername}, using {opts}')
+            logging.info(
+                f'Connecting to {name} with driver {drivername}, using {driverinstance.opts}'
+            )
 
     def register_hook_definition(self, obj):
         try:
