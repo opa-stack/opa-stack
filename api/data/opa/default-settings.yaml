@@ -63,7 +63,8 @@ default:
       LOAD: "auto"
       DRIVER: "celery"
       OPTS:
-        URL: "pyamqp://guest@localhost//"
+        BACKEND_URL: "redis://redis/1"
+        BROKER_URL: "pyamqp://guest@rabbitmq//"
 
   # Used different places, currently:
   #  * Setting FastAPI/Starlette debug-mode (https://www.starlette.io/applications/)

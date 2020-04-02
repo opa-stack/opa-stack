@@ -1,0 +1,25 @@
+version: "3.7"
+
+services:
+  api:
+    image: opastack/api:latest
+    ports:
+      - "127.0.0.1:8001:8000"
+    environment:
+      OPA_PLUGIN_PATHS: "/plugins"
+    volumes:
+      - ./plugins:/plugins
+
+  redis:
+    image: "redis:5"
+
+  rabbitmq:
+    image: "rabbitmq:3.8-management"
+    ports:
+      - "15672:15672" # Management port
+
+  flower:
+    image: "mher/flower:latest"
+    command: "-A proj --broker=amqp://guest:guest@rabbitmq:5672//"
+    ports:
+      - "5555:5555"

@@ -38,7 +38,7 @@ services:
   rabbitmq:
     image: "rabbitmq:3.8-management"
     ports:
-      - "15672:15672" # Management port
+      - "15672:15672" # Management port, guest / guest for login as default
 
   redis:
     image: "redis:5.0.7"

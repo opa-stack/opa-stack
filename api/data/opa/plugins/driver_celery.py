@@ -1,90 +1,40 @@
 import logging
 
+from celery import Celery
+
 from opa.core.plugin import Driver, Hook, Setup, HookDefinition
 from opa.utils import host_exists
 
 
-class hookname(HookDefinition):
-    ...
+class celery_setup_definition(HookDefinition):
+    name = 'driver.celery.setup'
 
 
-class ahook(Hook):
-    name = 'hookname'
+class celery_setup(Hook):
+    name = 'driver.celery.setup'
+    order = -1
 
-    def run(self):
+    def run(self, celery_app):
         print('running hook')
+        celery_app.conf.task_routes = {"worker.celery_worker.test_celery": "test-queue"}
+        celery_app.conf.update(task_track_started=True)
+        return celery_app
 
 
-class Celery(Driver):
+class CeleryDriver(Driver):
     name = 'celery'
 
     def connect(self):
-        print('connecting celery')
-        # if not host_exists(opts.URL, 'database-url'):
-        #     return None
+        if not host_exists(self.opts.BACKEND_URL, 'database-url'):
+            return None
 
-        logging.info(f"Connectiong to celery using {self.opts}")
+        if not host_exists(self.opts.BROKER_URL, 'database-url'):
+            return None
 
-        self.instance = None
+        celery_app = Celery(
+            "tasks", backend=self.opts.BACKEND_URL, broker=self.opts.BROKER_URL,
+        )
 
-    def disconnect(self):
-        pass
+        celery_app = self.pm.call('driver.celery.setup', celery_app)
 
-
-from fastapi import FastAPI, BackgroundTasks
-
-from opa.utils import celery_app
-
-from fastapi import APIRouter
-from opa.core.plugin import BasePlugin
-
-router = APIRouter()
-
-
-@router.get("/testa")
-async def root():
-    return {"message": "test"}
-
-
-from fastapi import APIRouter, Depends
-
-from opa.core.plugin import BasePlugin, get_component
-
-from opa.plugins.driver_redis import Walrus
-
-router = APIRouter()
-
-
-@router.get("/counter-async")
-async def counter_async(aioredis=Depends(get_component('aioredis')), key=None):
-    counter = await aioredis.instance.incr(key or 'incr-async')
-    return f'Counter is {counter}'
-
-
-@router.get("/counter-sync")
-def counter_sync(walrus=Depends(get_component('walrus')), key=None):
-    counter = walrus.instance.incr(key or 'incr-sync')
-    return f'Counter is {counter}'
-
-
-@router.get("/bloom")
-def check_bloom_filter(string: str, walrus=Depends(get_component('walrus'))):
-    bf = walrus.instance.bloom_filter('bf')
-    return string in bf
-
-
-@router.post("/bloom")
-def add_bloom_filter(string: str, walrus=Depends(get_component('walrus'))):
-    # Waiting for https://github.com/tiangolo/fastapi/issues/1018 to have plain/text input
-    # Possible now, but not with generation of the openapi spec..
-    bf = walrus.instance.bloom_filter('bf')
-    for i in string.split(' '):
-        bf.add(i)
-
-    return f'Added entries'
-
-
-class Test(Setup):
-    def __init__(self, app):
-        print('test-setup')
-        app.include_router(router)
+        self.instance = celery_app
