@@ -1,5 +1,6 @@
 import json
 import logging
+from typing import Dict
 from dynaconf import LazySettings
 
 config = LazySettings()
@@ -25,3 +26,5 @@ def init_configuration():
     logging.debug(f'Using configuration environemnt={config.ENV_FOR_DYNACONF}')
     logging.debug('Configuration is:')
     logging.debug(json.dumps(config.as_dict(internal=False), indent=2))
+
+state: Dict = {}

@@ -1,6 +1,6 @@
 #!/usr/bin/with-contenv sh
 
-[[ "${DONTSTART}" == "api" ]] && ( /usr/bin/s6-stopdisable api && exit 0 )
+[[ "${DONTSTART}" == "api" || "${MODE}" == "worker" || "${MODE}" == "manual" ]] && ( /usr/bin/s6-stopdisable api && exit 0 )
 
 cd /data
 

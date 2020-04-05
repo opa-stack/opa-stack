@@ -14,10 +14,8 @@ class celery_setup(Hook):
     name = 'driver.celery.setup'
     order = -1
 
-    def run(self, celery_app):
-        print('running hook')
-        celery_app.conf.task_routes = {"worker.celery_worker.test_celery": "test-queue"}
-        celery_app.conf.update(task_track_started=True)
+    def run(self, celery_app, task_candidates):
+        celery_app.autodiscover_tasks(task_candidates)
         return celery_app
 
 
@@ -35,6 +33,6 @@ class CeleryDriver(Driver):
             "tasks", backend=self.opts.BACKEND_URL, broker=self.opts.BROKER_URL,
         )
 
-        celery_app = self.pm.call('driver.celery.setup', celery_app)
+        celery_app = self.pm.call('driver.celery.setup', celery_app=celery_app, task_candidates=self.pm.store['task_candidates'])
 
         self.instance = celery_app

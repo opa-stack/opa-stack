@@ -13,11 +13,29 @@ services:
       - "127.0.0.1:5678:5678" # Only needed for debugging
     environment:
       ENV: dev
+      MODE: manual
 
     depends_on:
       - mongo
       - rabbitmq
       - redis
+
+  worker:
+    build:
+      context: "api"
+      dockerfile: Dockerfile-dev
+    volumes:
+      - "./api/data:/data"
+      - ".:/opa-stack"
+    environment:
+      ENV: dev
+      MODE: manual
+
+    depends_on:
+      - mongo
+      - rabbitmq
+      - redis
+
 
   mongo:
     image: "mongo:3.6.16"

@@ -26,12 +26,13 @@ class Driver(BasePlugin):
     opts: Dict[str, Any]
     pm: 'PluginManager'
 
-    def __init__(self, opts=None):
+    def __init__(self, opts=None, load='auto'):
         self.opts = opts or {}
+        self.load = load
 
     def _pre_connection_check(self, connectionstatus, load):
         if connectionstatus == False:  # if no host found
-            if load == 'yes':
+            if self.load == 'yes':
                 raise Exception(
                     f'Connect pre-check failed for {self.name}, as if the host is not there? Options {self.opts}'
                 )
@@ -41,14 +42,14 @@ class Driver(BasePlugin):
         if hasattr(self, 'validate'):
             return True
 
-    def initialize(self, load=None):
+    def initialize(self):
         connectionstatus = self.connect()
-        if self._pre_connection_check(connectionstatus, load):
+        if self._pre_connection_check(connectionstatus, self.load):
             self.validate()
 
-    async def initialize_async(self, load=None):
+    async def initialize_async(self):
         connectionstatus = await self.connect()
-        if self._pre_connection_check(connectionstatus, load):
+        if self._pre_connection_check(connectionstatus, self.load):
             await self.validate()
 
     def get_instance(self):
@@ -70,8 +71,9 @@ class Setup(BasePlugin):
     ...
 
 
-def get_defined_plugins(mod):
-    returndata = {'hook-definitions': [], 'hooks': [], 'drivers': [], 'setup': []}
+def get_defined_plugins(mod, plugin_types=None):
+    plugin_types = plugin_types or ['hook-definitions', 'hooks', 'drivers', 'setup']
+    returndata = defaultdict(list)
 
     for name, obj in inspect.getmembers(mod, inspect.isclass):
         if mod.__name__ != obj.__module__:
@@ -81,13 +83,13 @@ def get_defined_plugins(mod):
         if obj is Hook or obj is Driver or obj is Setup:
             continue
 
-        if issubclass(obj, Hook):
+        if issubclass(obj, Hook) and 'hooks' in plugin_types:
             returndata['hooks'].append(obj)
-        elif issubclass(obj, HookDefinition):
+        elif issubclass(obj, HookDefinition) and 'hook-definitions' in plugin_types:
             returndata['hook-definitions'].append(obj)
-        elif issubclass(obj, Driver):
+        elif issubclass(obj, Driver) and 'drivers' in plugin_types:
             returndata['drivers'].append(obj)
-        elif issubclass(obj, Setup):
+        elif issubclass(obj, Setup) and 'setup' in plugin_types:
             returndata['setup'].append(obj)
     return returndata
 
@@ -100,12 +102,16 @@ class PluginManager:
     hooks: Dict[str, List[Hook]]
     hook_definitions: Dict[str, Hook]
 
+    store: Dict[str, Any]
+
     def __init__(self):
         self.status = defaultdict(dict)
         self.drivers = {}
         self.optional_components = {}
         self.hooks = defaultdict(list)
         self.hook_definitions = {}
+
+        self.store = {'task_candidates': []}
 
     def post_hook(self):
         final_hooks: Dict[str, Hook] = {}
@@ -143,13 +149,7 @@ class PluginManager:
         logging.debug(f'Registered driver {name}')
         self.drivers[name] = driver
 
-    async def load_components(self):
-        """
-        Preload the components that we are going to use.
-        The components will be available using singletons that represent connections.
-        We will therefor reuse each components connection and connect once per
-        definition in config.OPTIONAL_COMPONENTS
-        """
+    def _preload_drivers(self):
         for name, values in config.OPTIONAL_COMPONENTS.items():
             name = name.lower()
             load = values.get('LOAD', 'auto')
@@ -164,18 +164,30 @@ class PluginManager:
                     f'Invalid driver specified ({drivername}), no way to handle it'
                 )
 
-            driverinstance = driver(opts=values.get('OPTS', {}))
+            driverinstance = driver(opts=values.get('OPTS', {}), load=load)
             driverinstance.pm = self
-
-            if asyncio.iscoroutinefunction(driverinstance.connect):
-                await driverinstance.initialize_async(load=load)
-            else:
-                driverinstance.initialize(load=load)
             self.optional_components[name] = driverinstance
 
             logging.info(
                 f'Connecting to {name} with driver {drivername}, using {driverinstance.opts}'
             )
+            yield driverinstance
+
+
+    async def load_components(self):
+        for driverinstance in self._preload_drivers():
+            if asyncio.iscoroutinefunction(driverinstance.connect):
+                await driverinstance.initialize_async()
+            else:
+                driverinstance.initialize()
+
+    def load_sync_components_global(self):
+        for driverinstance in self._preload_drivers():
+            if asyncio.iscoroutinefunction(driverinstance.connect):
+                logging.debug(f'Driver {driverinstance.name} is async, wont load')
+            else:
+                driverinstance.initialize()
+
 
     def register_hook_definition(self, obj):
         try:
@@ -238,14 +250,7 @@ class PluginManager:
 
         return await self.hooks[name].run(*args, **kwargs)
 
-
-plugin_manager: PluginManager
-
-
-async def startup(app):
-    global plugin_manager
-    plugin_manager = PluginManager()  # Singleton used around the app
-
+def _get_plugindata():
     """
     Plugins are imported from multiple paths with these rules:
       * First with a unique name wins
@@ -284,12 +289,17 @@ async def startup(app):
     sys.path = unique(sys_paths)
 
     plugins_to_load = defaultdict(list)
+    task_candidates = []
 
     for plugin in pkgutil.iter_modules(PLUGIN_PATHS):
         allow_match = os.path.join(plugin.module_finder.path, plugin.name)
+        tasks_candidate = False
 
         if plugin.ispkg:
             metafile = os.path.join(allow_match, 'meta.json')
+
+            if os.path.exists(os.path.join(allow_match, 'tasks.py')):
+                tasks_candidate = True
         else:
             metafile = f'{allow_match}-meta.json'
 
@@ -345,23 +355,59 @@ async def startup(app):
         logging.info(f'Loading plugin: {plugin.name}')
         mod = import_module(plugin.name)
 
+        if tasks_candidate:
+            task_candidates.append(plugin.name)
+
         defined_plugins = get_defined_plugins(mod)
         for pt in ['hook-definitions', 'hooks', 'drivers', 'setup']:
             plugins_to_load[pt] += defined_plugins[pt]
 
-    for hook_definition in plugins_to_load['hook-definitions']:
+    return {'plugins_to_load': plugins_to_load, 'task_candidates': task_candidates}
+
+
+plugin_manager: PluginManager
+
+
+async def startup(app):
+    global plugin_manager
+    plugin_manager = PluginManager()
+
+    plugin_manager.store.update(**_get_plugindata())
+
+    for hook_definition in plugin_manager.store['plugins_to_load']['hook-definitions']:
         plugin_manager.register_hook_definition(hook_definition)
 
-    for hook in plugins_to_load['hooks']:
+    for hook in plugin_manager.store['plugins_to_load']['hooks']:
         plugin_manager.register_hook(hook)
     plugin_manager.post_hook()
 
-    for driver in plugins_to_load['drivers']:
+    for driver in plugin_manager.store['plugins_to_load']['drivers']:
         plugin_manager.register_driver(driver)
     await plugin_manager.load_components()
 
-    for setup in plugins_to_load['setup']:
+    for setup in plugin_manager.store['plugins_to_load']['setup']:
         plugin_manager.run_setup(setup, {'app': app, 'pm': plugin_manager})
+
+def startup_worker():
+    """
+    This function is dedicated to celery worker startup. We can't use the regular one
+    because it is async, and it is tailored to fastapi
+    """
+    global plugin_manager
+    plugin_manager = PluginManager()
+
+    plugin_manager.store.update(**_get_plugindata())
+
+    for hook_definition in plugin_manager.store['plugins_to_load']['hook-definitions']:
+        plugin_manager.register_hook_definition(hook_definition)
+
+    for hook in plugin_manager.store['plugins_to_load']['hooks']:
+        plugin_manager.register_hook(hook)
+    plugin_manager.post_hook()
+
+    for driver in plugin_manager.store['plugins_to_load']['drivers']:
+        plugin_manager.register_driver(driver)
+    plugin_manager.load_sync_components_global()
 
 
 async def shutdown():

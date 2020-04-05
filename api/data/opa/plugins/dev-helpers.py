@@ -10,5 +10,8 @@ if config.BETTER_EXCEPTIONS:
 
 if config.PTVSD:
     import ptvsd
+    from opa import state
 
-    ptvsd.enable_attach(('0.0.0.0', 5678))
+    # Wont work in celery mode...
+    if state['runner'] == 'uvicorn':
+        ptvsd.enable_attach(('0.0.0.0', 5678))

@@ -1,13 +1,14 @@
 import sys
 
+from typing import Any
+
 from starlette.middleware.cors import CORSMiddleware
 from fastapi import Depends, FastAPI, Header, HTTPException
 
-from opa import config, init_configuration
+from opa import config, init_configuration, state
 from opa.core import plugin
 
 app: FastAPI
-
 
 async def plugin_startup():
     """
@@ -16,7 +17,7 @@ async def plugin_startup():
     await plugin.startup(app)
 
 
-def start_app():
+def start_api():
     global app
     init_configuration()
 
@@ -43,6 +44,17 @@ def start_app():
 
     return app
 
+def start_worker():
+    global celery
+    init_configuration()
+    plugin.startup_worker()
+
+    # We must export main.celery for the worker to be happy
+    celery = plugin.plugin_manager.optional_components['celery'].instance
 
 if 'uvicorn' in sys.argv[0]:
-    start_app()
+    state['runner'] = 'uvicorn'
+    start_api()
+elif 'celery' in sys.argv[0]:
+    state['runner'] = 'celery'
+    start_worker()

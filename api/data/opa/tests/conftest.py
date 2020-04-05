@@ -20,33 +20,33 @@ def fix_syspath():
 
 @pytest.fixture(scope="function")
 def app():
-    with TestClient(main.start_app()) as client:
+    with TestClient(main.start_api()) as client:
         yield client
 
 
 @pytest.fixture(scope="function")
 def app_c1(monkeypatch):
     monkeypatch.setenv('ENV', 'testing_1')
-    with TestClient(main.start_app()) as client:
+    with TestClient(main.start_api()) as client:
         yield client
 
 
 @pytest.fixture(scope="function")
 def app_c2(monkeypatch):
     monkeypatch.setenv('ENV', 'testing_2')
-    with TestClient(main.start_app()) as client:
+    with TestClient(main.start_api()) as client:
         yield client
 
 
 @pytest.fixture(scope="function")
 def app_dev(monkeypatch):
     monkeypatch.setenv('ENV', 'dev')
-    with TestClient(main.start_app()) as client:
+    with TestClient(main.start_api()) as client:
         yield client
 
 
 @pytest.fixture(scope="function")
 def app_examples(monkeypatch):
     monkeypatch.setenv('ENV', 'testing_examples')
-    with TestClient(main.start_app()) as client:
+    with TestClient(main.start_api()) as client:
         yield client
