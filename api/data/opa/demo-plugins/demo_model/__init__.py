@@ -1,6 +1,3 @@
-from opa.core.plugin import BasePlugin
-
-
 from . import model
 
 

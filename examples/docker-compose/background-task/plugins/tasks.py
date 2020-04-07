@@ -1,16 +1,15 @@
 from time import sleep
 from secrets import token_urlsafe
 
-from fastapi import BackgroundTasks, APIRouter, Depends
+from fastapi import BackgroundTasks, APIRouter
 
-from opa.utils.redis import get_walrus
-from opa.core.plugin import BasePlugin
+from opa import get_router, get_instance
 
-router = APIRouter()
+router = get_router()
 
 
 def queuer(text: str):
-    walrus = get_walrus()  # You can't use dependency injection when inside a task
+    walrus = get_instance('walrus')
     lock = walrus.lock('runone')
 
     with lock:
@@ -27,10 +26,6 @@ async def runone_post(background_tasks: BackgroundTasks):
 
 
 @router.get("/runone")
-async def runone_get(walrus=Depends(get_walrus)):
+async def runone_get():
+    walrus = get_instance('walrus')
     return {"current_task": walrus.get('runone')}
-
-
-class Plugin(BasePlugin):
-    def setup(self, app):
-        app.include_router(router)

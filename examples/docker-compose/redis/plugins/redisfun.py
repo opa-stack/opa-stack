@@ -1,40 +1,34 @@
-from fastapi import APIRouter, Depends
+from opa import get_instance, get_router
 
-from opa.core.plugin import Setup, get_component
-from opa.plugins.driver_redis import Walrus
-
-router = APIRouter()
+router = get_router()
 
 
 @router.get("/counter-async")
-async def counter_async(aioredis=Depends(get_component('aioredis')), key=None):
-    counter = await aioredis.instance.incr(key or 'incr-async')
+async def counter_async(key=None):
+    counter = await get_instance('aioredis').incr(key or 'incr-async')
     return f'Counter is {counter}'
 
 
 @router.get("/counter-sync")
-def counter_sync(walrus: Walrus = Depends(get_component('walrus')), key=None):
-    counter = walrus.instance.incr(key or 'incr-sync')
+def counter_sync(key=None):
+    counter = get_instance('walrus').incr(key or 'incr-sync')
     return f'Counter is {counter}'
 
 
 @router.get("/bloom")
-def check_bloom_filter(string: str, walrus=Depends(get_component('walrus'))):
-    bf = walrus.instance.bloom_filter('bf')
+def check_bloom_filter(string: str):
+    walrus = get_instance('walrus')
+    bf = walrus.bloom_filter('bf')
     return string in bf
 
 
 @router.post("/bloom")
-def add_bloom_filter(string: str, walrus=Depends(get_component('walrus'))):
+def add_bloom_filter(string: str):
     # Waiting for https://github.com/tiangolo/fastapi/issues/1018 to have plain/text input
     # Possible now, but not with generation of the openapi spec..
-    bf = walrus.instance.bloom_filter('bf')
+    walrus = get_instance('walrus')
+    bf = walrus.bloom_filter('bf')
     for i in string.split(' '):
         bf.add(i)
 
     return f'Added entries'
-
-
-class RedisFun(Setup):
-    def __init__(self, app):
-        app.include_router(router)

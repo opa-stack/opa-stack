@@ -5,11 +5,9 @@ import secrets
 from time import sleep
 from asyncio import sleep as async_sleep
 
-from fastapi import APIRouter
+from opa import get_router
 
-from opa.core.plugin import Setup
-
-router = APIRouter()
+router = get_router()
 
 # Using tags helps separate your items from the also included demo-plugins
 @router.get("/time", tags=["timekeeper"])
@@ -48,8 +46,3 @@ def sync_sleeper(seconds: int):
     sleep(seconds)
     logging.info(f'Ending sync sleep for ({randstring}) for {seconds}')
     return f'I slept for {seconds} seconds'
-
-
-class TimeKeeper(Setup):
-    def __init__(self, app):
-        app.include_router(router)

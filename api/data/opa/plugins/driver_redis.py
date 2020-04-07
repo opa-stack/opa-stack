@@ -2,7 +2,7 @@ import logging
 import aioredis as aioredislib
 import walrus as walruslib
 
-from opa.core.plugin import Driver
+from opa import Driver
 from opa.utils import host_exists
 
 

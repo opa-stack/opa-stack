@@ -10,6 +10,7 @@ from opa.core import plugin
 
 app: FastAPI
 
+
 async def plugin_startup():
     """
     This function is called after app is available (via on_startup)
@@ -20,7 +21,6 @@ async def plugin_startup():
 def start_api():
     global app
     init_configuration()
-
     app = FastAPI(
         title=config.PROJECT_NAME,
         description=config.PROJECT_DESCRIPTION,
@@ -44,17 +44,18 @@ def start_api():
 
     return app
 
-def start_worker():
-    global celery
-    init_configuration()
-    plugin.startup_worker()
 
-    # We must export main.celery for the worker to be happy
-    celery = plugin.plugin_manager.optional_components['celery'].instance
+def start_simple():
+    init_configuration()
+    plugin.startup_simple()
+
 
 if 'uvicorn' in sys.argv[0]:
     state['runner'] = 'uvicorn'
     start_api()
 elif 'celery' in sys.argv[0]:
     state['runner'] = 'celery'
-    start_worker()
+    start_simple()
+
+    # We must export main.celery for the worker to be happy
+    celery = plugin.plugin_manager.optional_components['celery'].instance

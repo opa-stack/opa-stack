@@ -9,7 +9,7 @@ from opa.models.test import Item, Items
 from opa.core.security import get_src_zone, Zone
 from opa.utils.mongodb import AsyncIOMotorClient, AsyncIOMotorDatabase, get_database
 
-from opa.core.plugin import Setup
+from opa import get_router
 
 
 async def create_test_item(db: AsyncIOMotorDatabase, item: Item) -> Item:
@@ -27,7 +27,7 @@ async def read_all_items(db: AsyncIOMotorDatabase) -> List[Item]:
     return items
 
 
-router = APIRouter()
+router = get_router()
 
 
 @router.get("/demo-route-string", tags=["demo"])
@@ -64,8 +64,3 @@ async def get_all_items(
 @router.get("/demo-requestdata", tags=["demo"])
 async def get_requestdata(request: Request):
     return {"ip": request.client.host}
-
-
-class Demo(Setup):
-    def __init__(self, app):
-        app.include_router(router)

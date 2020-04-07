@@ -2,7 +2,7 @@ import logging
 
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from opa.core.plugin import Driver
+from opa import Driver
 from opa.utils import host_exists
 
 

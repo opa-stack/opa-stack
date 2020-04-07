@@ -10,7 +10,7 @@ from collections import defaultdict
 from importlib import import_module
 from typing import Dict, Any, List, Callable
 
-from fastapi import FastAPI
+from fastapi import FastAPI, APIRouter
 
 from opa.utils import unique, filter_dict_to_function
 from opa import config
@@ -173,7 +173,6 @@ class PluginManager:
             )
             yield driverinstance
 
-
     async def load_components(self):
         for driverinstance in self._preload_drivers():
             if asyncio.iscoroutinefunction(driverinstance.connect):
@@ -187,7 +186,6 @@ class PluginManager:
                 logging.debug(f'Driver {driverinstance.name} is async, wont load')
             else:
                 driverinstance.initialize()
-
 
     def register_hook_definition(self, obj):
         try:
@@ -250,6 +248,7 @@ class PluginManager:
 
         return await self.hooks[name].run(*args, **kwargs)
 
+
 def _get_plugindata():
     """
     Plugins are imported from multiple paths with these rules:
@@ -290,6 +289,7 @@ def _get_plugindata():
 
     plugins_to_load = defaultdict(list)
     task_candidates = []
+    routers = []
 
     for plugin in pkgutil.iter_modules(PLUGIN_PATHS):
         allow_match = os.path.join(plugin.module_finder.path, plugin.name)
@@ -361,8 +361,14 @@ def _get_plugindata():
         defined_plugins = get_defined_plugins(mod)
         for pt in ['hook-definitions', 'hooks', 'drivers', 'setup']:
             plugins_to_load[pt] += defined_plugins[pt]
+        if hasattr(mod, 'router'):
+            routers.append(mod.router)
 
-    return {'plugins_to_load': plugins_to_load, 'task_candidates': task_candidates}
+    return {
+        'plugins_to_load': plugins_to_load,
+        'task_candidates': task_candidates,
+        'routers': routers,
+    }
 
 
 plugin_manager: PluginManager
@@ -385,13 +391,17 @@ async def startup(app):
         plugin_manager.register_driver(driver)
     await plugin_manager.load_components()
 
-    for setup in plugin_manager.store['plugins_to_load']['setup']:
-        plugin_manager.run_setup(setup, {'app': app, 'pm': plugin_manager})
+    for router in plugin_manager.store['routers']:
+        app.include_router(router)
 
-def startup_worker():
+    for setup in plugin_manager.store['plugins_to_load']['setup']:
+        plugin_manager.run_setup(setup, {'app': app})
+
+
+def startup_simple():
     """
-    This function is dedicated to celery worker startup. We can't use the regular one
-    because it is async, and it is tailored to fastapi
+    Startup for simple sync apps that want some of the core functionality of opa-stack,
+    but not the fastapi app itself. Usefull for things like celery workers
     """
     global plugin_manager
     plugin_manager = PluginManager()
@@ -418,17 +428,25 @@ def get_plugin_manager() -> PluginManager:
     return plugin_manager
 
 
-def get_component(name):
-    """
-    Returns a function to get a component
-    """
+def get_component(name: str):
+    return plugin_manager.optional_components[name]
 
-    def inner():
-        try:
-            return plugin_manager.optional_components[name]
-        except KeyError:
-            raise Exception(
-                f'Invalid component "{name}", valid components are: {list(plugin_manager.optional_components.keys())}'
-            )
 
-    return inner
+def get_instance(name: str):
+    return get_component(name).instance
+
+
+def get_util(name: str):
+    return get_component(name).util
+
+
+def call_hook(name, *args, **kwargs):
+    return plugin_manager.call(name, *args, **kwargs)
+
+
+async def call_hook_async(name, *args, **kwargs):
+    return await plugin_manager.call_async(name, *args, **kwargs)
+
+
+def get_router(*args, **kwargs) -> APIRouter:
+    return APIRouter(*args, **kwargs)

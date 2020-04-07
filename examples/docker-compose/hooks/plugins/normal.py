@@ -1,4 +1,4 @@
-from opa.core.plugin import Hook
+from opa import Hook
 
 
 class fullname_hook(Hook):

@@ -1,14 +1,8 @@
-from fastapi import APIRouter
-from opa.core.plugin import Setup
+from opa import get_router
 
-router = APIRouter()
+router = get_router()
 
 
 @router.get("/hello")
 def return_string():
     return 'Hello to you'
-
-
-class Hello(Setup):
-    def __init__(self, app):
-        app.include_router(router)

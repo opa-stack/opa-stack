@@ -2,7 +2,7 @@ import logging
 
 from celery import Celery
 
-from opa.core.plugin import Driver, Hook, Setup, HookDefinition
+from opa import Driver, Hook, Setup, HookDefinition, call_hook
 from opa.utils import host_exists
 
 
@@ -33,6 +33,6 @@ class CeleryDriver(Driver):
             "tasks", backend=self.opts.BACKEND_URL, broker=self.opts.BROKER_URL,
         )
 
-        celery_app = self.pm.call('driver.celery.setup', celery_app=celery_app, task_candidates=self.pm.store['task_candidates'])
+        celery_app = call_hook('driver.celery.setup', celery_app=celery_app, task_candidates=self.pm.store['task_candidates'])
 
         self.instance = celery_app

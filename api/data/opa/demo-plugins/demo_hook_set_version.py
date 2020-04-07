@@ -5,15 +5,9 @@ Hooks are placed around the codebase and a plugin can register to run when a hoo
 """
 
 from fastapi import Depends, APIRouter
-from opa.core.plugin import (
-    get_plugin_manager,
-    PluginManager,
-    Hook,
-    HookDefinition,
-    Setup,
-)
+from opa import call_hook, call_hook_async, Hook, HookDefinition, get_router
 
-router = APIRouter()
+router = get_router()
 
 
 class async_version(HookDefinition):
@@ -28,9 +22,9 @@ class sync_version(HookDefinition):
 
 
 @router.get("/demo-hook/version", tags=["demo"])
-async def show_version(pm: PluginManager = Depends(get_plugin_manager)):
-    async_version = await pm.call_async('async-version')
-    sync_version = pm.call('sync-version')
+async def show_version():
+    async_version = await call_hook_async('async-version')
+    sync_version = call_hook('sync-version')
     return {'sync-version': sync_version, 'async-version': async_version}
 
 
@@ -55,8 +49,3 @@ class hook_async_b(Hook):
 
     async def run(self):
         return 3
-
-
-class Demo(Setup):
-    def __init__(self, app):
-        app.include_router(router)

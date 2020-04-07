@@ -1,13 +1,7 @@
-from fastapi import Depends, APIRouter
-from opa.core.plugin import (
-    get_plugin_manager,
-    PluginManager,
-    Hook,
-    HookDefinition,
-    Setup,
-)
+from fastapi import APIRouter
+from opa import call_hook, Hook, HookDefinition, get_router
 
-router = APIRouter()
+router = get_router()
 
 
 class name_hook(HookDefinition):
@@ -17,13 +11,6 @@ class name_hook(HookDefinition):
 
 
 @router.get("/get-fullname/{firstname}/{surname}")
-def show_name(
-    firstname: str, surname: str, pm: PluginManager = Depends(get_plugin_manager)
-):
-    fullname = pm.call('fullname', firstname, surname)
+def show_name(firstname: str, surname: str):
+    fullname = call_hook('fullname', firstname, surname)
     return f"Hello {fullname}"
-
-
-class MyApp(Setup):
-    def __init__(self, app):
-        app.include_router(router)
