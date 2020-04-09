@@ -25,9 +25,3 @@ services:
     image: "rabbitmq:3.8-management"
     ports:
       - "15672:15672" # Management port
-
-  flower:
-    image: "mher/flower:latest"
-    command: "-A proj --broker=amqp://guest:guest@rabbitmq:5672//"
-    ports:
-      - "5555:5555"
