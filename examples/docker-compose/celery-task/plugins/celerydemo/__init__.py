@@ -1,4 +1,4 @@
-from opa import get_router, Hook, get_instance, app
+from opa import get_router, Hook, get_instance
 
 
 class celery_config(Hook):

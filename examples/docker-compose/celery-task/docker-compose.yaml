@@ -10,6 +10,14 @@ services:
     volumes:
       - ./plugins:/plugins
 
+  worker:
+    image: opastack/api:latest
+    environment:
+      OPA_PLUGIN_PATHS: "/plugins"
+      MODE: "worker"
+    volumes:
+      - ./plugins:/plugins
+
   redis:
     image: "redis:5"
 

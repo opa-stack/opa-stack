@@ -1,8 +1,7 @@
 #!/usr/bin/with-contenv sh
 
-[[ "${DONTSTART}" == "worker" || "${MODE}" == "api" || "${MODE}" == "manual" ]] && ( /usr/bin/s6-stopdisable worker && exit 0 )
+[[ "${MODE}" == "worker" ]] || ( /usr/bin/s6-stopdisable worker && exit 0 )
 
 cd /data
 
-exec sleep 1000
-
+exec celery worker -A opa.main ${CELERY_PARAMS}
