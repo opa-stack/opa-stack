@@ -10,18 +10,39 @@ services:
     volumes:
       - ./plugins:/plugins
 
-  worker:
+  worker-math:
+    image: opastack/api:latest
+    environment:
+      OPA_PLUGIN_PATHS: "/plugins"
+      OPA_LOGLEVEL: debug
+      MODE: "worker"
+      CELERY_PARAMS: -E -Q math
+    volumes:
+      - ./plugins:/plugins
+
+  worker-counter:
     image: opastack/api:latest
     environment:
       OPA_PLUGIN_PATHS: "/plugins"
       MODE: "worker"
+      CELERY_PARAMS: -E -Q counter
     volumes:
       - ./plugins:/plugins
+
+  # ### untested
+  # worker-beat:
+  #   image: opastack/api:latest
+  #   environment:
+  #     OPA_PLUGIN_PATHS: "/plugins"
+  #     MODE: "worker"
+  #     CELERY_COMMAND: beat
+  #   volumes:
+  #     - ./plugins:/plugins
 
   redis:
     image: "redis:5"
 
   rabbitmq:
     image: "rabbitmq:3.8-management"
-    ports:
-      - "15672:15672" # Management port
+    # ports:
+    #   - "15672:15672" # Management port

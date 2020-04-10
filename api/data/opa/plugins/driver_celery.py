@@ -14,8 +14,7 @@ class celery_setup(Hook):
     name = 'driver.celery.setup'
     order = -1
 
-    def run(self, celery_app, task_candidates):
-        celery_app.autodiscover_tasks(task_candidates)
+    def run(self, celery_app):
         return celery_app
 
 
@@ -33,6 +32,7 @@ class CeleryDriver(Driver):
             "tasks", backend=self.opts.BACKEND_URL, broker=self.opts.BROKER_URL,
         )
 
-        celery_app = call_hook('driver.celery.setup', celery_app=celery_app, task_candidates=self.pm.store['task_candidates'])
+        celery_app.autodiscover_tasks(self.pm.store['task_candidates'])
+        celery_app = call_hook('driver.celery.setup', celery_app=celery_app)
 
         self.instance = celery_app

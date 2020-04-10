@@ -4,4 +4,4 @@
 
 cd /data
 
-exec celery worker -A opa.main ${CELERY_PARAMS}
+exec celery ${CELERY_COMMAND:-worker} -A opa.main ${CELERY_PARAMS}

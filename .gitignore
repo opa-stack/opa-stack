@@ -12,3 +12,4 @@ api/data/opa/tests/*.log
 .coverage
 api/data/opa/tests/coverage.xml
 .ropeproject
+celerybeat-schedule

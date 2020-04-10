@@ -429,7 +429,12 @@ def get_plugin_manager() -> PluginManager:
 
 
 def get_component(name: str):
+    try:
     return plugin_manager.optional_components[name]
+    except KeyError:
+        raise Exception(
+            f'Component is not defined (yet?). Defined components are: {list(plugin_manager.optional_components.keys())}'
+        )
 
 
 def get_instance(name: str):
