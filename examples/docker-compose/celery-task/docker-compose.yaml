@@ -16,16 +16,18 @@ services:
       OPA_PLUGIN_PATHS: "/plugins"
       OPA_LOGLEVEL: debug
       MODE: "worker"
-      CELERY_PARAMS: -E -Q math
+      CELERY_PARAMS: -E -Q math -n math
     volumes:
       - ./plugins:/plugins
+    ports:
+      - "127.0.0.1:8980:8989"
 
   worker-counter:
     image: opastack/api:latest
     environment:
       OPA_PLUGIN_PATHS: "/plugins"
       MODE: "worker"
-      CELERY_PARAMS: -E -Q counter
+      CELERY_PARAMS: -E -Q counter -n counter
     volumes:
       - ./plugins:/plugins
 
