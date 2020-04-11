@@ -1,0 +1,7 @@
+#!/usr/bin/with-contenv sh
+
+[[ "${MODE}" == "flower" ]] || ( /usr/bin/s6-stopdisable flower && exit 0 )
+
+cd /data
+
+exec flower -A opa.main
