@@ -17,7 +17,7 @@ router = get_router()
 
 
 @router.get('/inc')
-def counter(num1: int, num2: int):
+def counter():
     from celerydemo.tasks import counter
 
     walrus = get_instance('walrus')
