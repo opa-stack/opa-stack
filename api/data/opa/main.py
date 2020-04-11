@@ -53,7 +53,7 @@ def start_simple():
 if 'uvicorn' in sys.argv[0]:
     state['runner'] = 'uvicorn'
     start_api()
-elif 'celery' in sys.argv[0]:
+elif 'celery' in sys.argv[0] or 'flower' in sys.argv[0]:
     state['runner'] = 'celery'
     start_simple()
 
