@@ -19,8 +19,6 @@ services:
       CELERY_PARAMS: -E -Q math -n math
     volumes:
       - ./plugins:/plugins
-    ports:
-      - "127.0.0.1:8980:8989"
 
   worker-counter:
     image: opastack/api:latest
@@ -30,6 +28,16 @@ services:
       CELERY_PARAMS: -E -Q counter -n counter
     volumes:
       - ./plugins:/plugins
+
+  flower:
+    image: opastack/api:latest
+    environment:
+      OPA_PLUGIN_PATHS: "/plugins"
+      MODE: "flower"
+    volumes:
+      - ./plugins:/plugins
+    ports:
+      - "127.0.0.1:5555:5555"
 
   # ### untested
   # worker-beat:
@@ -46,5 +54,5 @@ services:
 
   rabbitmq:
     image: "rabbitmq:3.8-management"
-    # ports:
-    #   - "15672:15672" # Management port
+    ports:
+      - "15671:15672" # Management port
