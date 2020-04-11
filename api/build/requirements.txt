@@ -33,3 +33,4 @@ celery          # Task-queue lib
 #
 ptvsd           # Python Tools for Visual Studio debug server
 better_exceptions
+flower          # Celery monitoring.. Dedicated monitoring build?
