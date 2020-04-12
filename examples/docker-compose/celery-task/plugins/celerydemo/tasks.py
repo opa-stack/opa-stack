@@ -8,13 +8,16 @@ celery = get_instance('celery')
 
 
 @celery.task
-def counter() -> str:
-
-    for i in range(4):
+def counter(count: int) -> str:
+    walrus = get_instance('walrus')
+    for i in range(count):
         sleep(1)
-        current_task.update_state(state='PROGRESS', meta={'process_percent': i * 20})
+        status = walrus.incr('celery')
+        current_task.update_state(
+            state='PROGRESS',
+            meta={'process_percent': i * (100 / count), 'current_inc': status},
+        )
 
-    status = get_instance('walrus').incr('celery')
     return f'incremented to {status}'
 
 
