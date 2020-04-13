@@ -59,3 +59,10 @@ elif 'celery' in sys.argv[0] or 'flower' in sys.argv[0]:
 
     # We must export main.celery for the worker to be happy
     celery = plugin.plugin_manager.optional_components['celery'].instance
+elif 'ipython' == sys.argv[-1]:
+    from IPython import embed
+
+    state['runner'] = 'ipython'
+    start_simple()
+
+    embed(colors="neutral")
