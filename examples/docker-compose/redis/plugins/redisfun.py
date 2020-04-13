@@ -1,3 +1,4 @@
+from fastapi import Request
 from opa import get_instance, get_router
 
 router = get_router()
@@ -23,12 +24,18 @@ def check_bloom_filter(string: str):
 
 
 @router.post("/bloom")
-def add_bloom_filter(string: str):
+async def add_bloom_filter(request: Request, string: str = None):
     # Waiting for https://github.com/tiangolo/fastapi/issues/1018 to have plain/text input
     # Possible now, but not with generation of the openapi spec..
     walrus = get_instance('walrus')
     bf = walrus.bloom_filter('bf')
-    for i in string.split(' '):
-        bf.add(i)
 
-    return f'Added entries'
+    if string is None:
+        async for chunk in request.stream():
+            for i in chunk.split():
+                bf.add(i)
+    else:
+        for i in string.split():
+            bf.add(i)
+
+    return 'Added entries'
