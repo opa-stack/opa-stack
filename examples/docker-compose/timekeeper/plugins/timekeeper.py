@@ -1,11 +1,9 @@
-import logging
 import datetime
 import secrets
 
 from time import sleep
 from asyncio import sleep as async_sleep
-
-from opa import get_router
+from opa import get_router, log
 
 router = get_router()
 
@@ -30,9 +28,9 @@ async def async_sleeper(seconds: int):
     But I'm also async, so it shoulnt block anything..
     """
     randstring = secrets.token_urlsafe(5)
-    logging.info(f'Start async sleep for ({randstring}) for {seconds}')
+    log.info(f'Start async sleep for ({randstring}) for {seconds}')
     await async_sleep(seconds)
-    logging.info(f'Ending async sleep for ({randstring}) for {seconds}')
+    log.info(f'Ending async sleep for ({randstring}) for {seconds}')
     return f'I slept for {seconds} seconds'
 
 
@@ -42,7 +40,7 @@ def sync_sleeper(seconds: int):
     I'm almost like sleep-async, but I'm not async.. That means that I block python when I do nothing.
     """
     randstring = secrets.token_urlsafe(5)
-    logging.info(f'Start sync sleep for ({randstring}) for {seconds}')
+    log.info(f'Start sync sleep for ({randstring}) for {seconds}')
     sleep(seconds)
-    logging.info(f'Ending sync sleep for ({randstring}) for {seconds}')
+    log.info(f'Ending sync sleep for ({randstring}) for {seconds}')
     return f'I slept for {seconds} seconds'

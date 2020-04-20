@@ -5,8 +5,8 @@ from typing import Any
 from starlette.middleware.cors import CORSMiddleware
 from fastapi import Depends, FastAPI, Header, HTTPException
 
-from opa import config, init_configuration, state
 from opa.core import plugin
+from opa import config, init_configuration, state
 
 app: FastAPI
 

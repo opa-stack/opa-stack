@@ -1,5 +1,3 @@
-import logging
-
 from celery import Celery
 
 from opa import Driver, Hook, Setup, HookDefinition, call_hook

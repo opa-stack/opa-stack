@@ -16,6 +16,7 @@ fastapi
 uvicorn
 dynaconf[all]
 aiofiles        # To serve static files
+loguru          # Log handler
 
 #
 # Libs

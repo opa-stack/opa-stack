@@ -1,4 +1,3 @@
-import logging
 import aioredis as aioredislib
 import walrus as walruslib
 

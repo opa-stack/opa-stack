@@ -1,8 +1,6 @@
-import logging
-
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from opa import Driver
+from opa import Driver, log
 from opa.utils import host_exists
 
 
@@ -23,7 +21,7 @@ class MongodbMotorAsync(Driver):
 
         # This throws an exception if not connected
         info = await self.instance.server_info()
-        logging.debug(info)
+        log.debug(info)
 
     async def disconnect(self):
         self.instance.close()

@@ -1,8 +1,6 @@
-import logging
-
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
-from opa import config
+from opa import config, log
 
 
 class DataBase:
@@ -13,7 +11,7 @@ db = DataBase()
 
 
 async def connect_to_mongo():
-    logging.info("Connecting to mongodb database..")
+    log.info("Connecting to mongodb database..")
     db.client = AsyncIOMotorClient(
         config.OPTIONAL_COMPONENTS.MONGODB.URL,
         socketTimeoutMS=1000,
@@ -23,11 +21,11 @@ async def connect_to_mongo():
 
     # This throws an exception if not connected
     info = await db.client.server_info()
-    logging.debug(info)
+    log.debug(info)
 
 
 async def close_mongo_connection():
-    logging.info("Closing mongodb connection")
+    log.info("Closing mongodb connection")
     db.client.close()
 
 

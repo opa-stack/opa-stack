@@ -1,9 +1,25 @@
+import sys
 import json
-import logging
+
 from typing import Dict
 from dynaconf import LazySettings
 
+from opa.core.logger import log
+
 config = LazySettings()
+
+from opa.core.plugin import (
+    HookDefinition,
+    Hook,
+    Driver,
+    Setup,
+    get_plugin_manager,
+    get_component,
+    get_instance,
+    get_router,
+    call_hook,
+    call_hook_async,
+)
 
 
 def init_configuration():
@@ -23,22 +39,9 @@ def init_configuration():
         ],
     )
 
-    logging.debug(f'Using configuration environemnt={config.ENV_FOR_DYNACONF}')
-    logging.debug('Configuration is:')
-    logging.debug(json.dumps(config.as_dict(internal=False), indent=2))
+    log.debug(f'Using configuration environemnt={config.ENV_FOR_DYNACONF}')
+    log.debug('Configuration is:')
+    log.debug(json.dumps(config.as_dict(internal=False), indent=2))
 
 
 state: Dict = {}
-
-from opa.core.plugin import (
-    HookDefinition,
-    Hook,
-    Driver,
-    Setup,
-    get_plugin_manager,
-    get_component,
-    get_instance,
-    get_router,
-    call_hook,
-    call_hook_async,
-)

@@ -4,7 +4,6 @@ import sys
 import json
 import inspect
 import asyncio
-import logging
 import pkgutil
 from collections import defaultdict
 from importlib import import_module
@@ -13,7 +12,7 @@ from typing import Dict, Any, List, Callable
 from fastapi import FastAPI, APIRouter
 
 from opa.utils import unique, filter_dict_to_function
-from opa import config
+from opa import config, log
 
 
 class BasePlugin:
@@ -146,12 +145,13 @@ class PluginManager:
             raise Exception(
                 f'Driver with this name ({name}) already exists. CaSe of driver is ignored.'
             )
-        logging.debug(f'Registered driver {name}')
+        log.debug(f'Registered driver {name}')
         self.drivers[name] = driver
 
     def _preload_drivers(self):
         for name, values in config.OPTIONAL_COMPONENTS.items():
-            name = name.lower()
+            name = name.lower() | log
+            {'test': 123} | log
             load = values.get('LOAD', 'auto')
             if load == 'no':
                 continue
@@ -168,7 +168,7 @@ class PluginManager:
             driverinstance.pm = self
             self.optional_components[name] = driverinstance
 
-            logging.info(
+            log.info(
                 f'Connecting to {name} with driver {drivername}, using {driverinstance.opts}'
             )
             yield driverinstance
@@ -183,7 +183,7 @@ class PluginManager:
     def load_sync_components_global(self):
         for driverinstance in self._preload_drivers():
             if asyncio.iscoroutinefunction(driverinstance.connect):
-                logging.debug(f'Driver {driverinstance.name} is async, wont load')
+                log.debug(f'Driver {driverinstance.name} is async, wont load')
             else:
                 driverinstance.initialize()
 
@@ -273,7 +273,7 @@ def _get_plugindata():
         else config.PLUGIN_PATHS
     ) + ['/data/opa/plugins']
 
-    logging.info(
+    log.info(
         'Plugin loading settings:'
         f'  plugin-paths: {PLUGIN_PATHS}\n'
         f'  whitelist-regex: {PLUGIN_WHITELIST_RE}\n'
@@ -303,16 +303,16 @@ def _get_plugindata():
         else:
             metafile = f'{allow_match}-meta.json'
 
-        logging.debug('')
-        logging.debug(f'Checking if we should load "{allow_match}"')
+        log.debug('')
+        log.debug(f'Checking if we should load "{allow_match}"')
 
         if os.path.exists(metafile):
-            logging.debug(f'Found metafile @ {metafile}')
+            log.debug(f'Found metafile @ {metafile}')
             metadata = json.load(open(metafile, 'r'))
         else:
-            logging.debug(f'Metafile @ {metafile} does not exist, using empty metadata')
+            log.debug(f'Metafile @ {metafile} does not exist, using empty metadata')
             metadata = {}
-        logging.debug(f'Metadata: {metadata}')
+        log.debug(f'Metadata: {metadata}')
 
         load_checks = {}
 
@@ -347,12 +347,12 @@ def _get_plugindata():
             )
 
         load = all(load_checks.values())
-        logging.debug(f'Load-checks: {load_checks}, overall({load})')
+        log.debug(f'Load-checks: {load_checks}, overall({load})')
 
         if not load:
             continue
 
-        logging.info(f'Loading plugin: {plugin.name}')
+        log.info(f'Loading plugin: {plugin.name}')
 
         """
         We should consider using lazy-loading instead of import_module.
